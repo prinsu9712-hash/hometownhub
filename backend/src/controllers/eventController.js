@@ -1,6 +1,7 @@
 const Event = require("../models/Event");
 const Community = require("../models/Community");
 const Notification = require("../models/Notification");
+const mongoose = require("mongoose");
 
 /* ===============================
    CREATE EVENT
@@ -77,6 +78,10 @@ exports.getPublicEvents = async (req, res) => {
 exports.getEvents = async (req, res) => {
   try {
     const { search, date } = req.query;
+
+    if (!mongoose.Types.ObjectId.isValid(req.params.communityId)) {
+      return res.json([]);
+    }
 
     let filter = {
       community: req.params.communityId,

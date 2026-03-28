@@ -1,6 +1,7 @@
 const Post = require("../models/Post");
 const Community = require("../models/Community");
 const Notification = require("../models/Notification");
+const mongoose = require("mongoose");
 
 const canModeratePost = (user, postAuthorId) =>
   user?.role === "ADMIN" || user?.role === "MODERATOR" || postAuthorId.toString() === user._id.toString();
@@ -58,6 +59,10 @@ exports.getPosts = async (req, res) => {
   try {
     const { communityId } = req.params;
     const { search, announcementOnly } = req.query;
+
+    if (!mongoose.Types.ObjectId.isValid(communityId)) {
+      return res.json([]);
+    }
 
     const filter = {
       community: communityId,

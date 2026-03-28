@@ -4,9 +4,43 @@ import Layout from "../components/Layout";
 import API, { getApiErrorMessage, getUploadUrl } from "../api";
 import { AuthContext } from "../context/AuthContext";
 
+const demoPosts = [
+  {
+    _id: "demo-post-1",
+    author: { _id: "demo-user-1", name: "Demo Moderator" },
+    content: "Welcome to the demo community feed. Live posting works after you open a real approved community from the database.",
+    isAnnouncement: true,
+    isPinned: true,
+    category: "Announcement",
+    tags: ["demo", "welcome"],
+    likes: [],
+    comments: [
+      {
+        _id: "demo-comment-1",
+        user: { _id: "demo-user-2", name: "Community Member" },
+        text: "Looks good. Create a real community to start posting live."
+      }
+    ],
+    shares: 0,
+    createdAt: "2026-03-28T10:00:00.000Z"
+  }
+];
+
+const demoEvents = [
+  {
+    _id: "demo-event-1",
+    title: "Sample Community Meetup",
+    description: "This is a preview event card. Real event creation is available inside approved live communities.",
+    date: "2026-04-05T09:30:00.000Z",
+    location: "Town Hall",
+    attendees: []
+  }
+];
+
 function Events() {
   const { communityId } = useParams();
   const { user } = useContext(AuthContext);
+  const isValidCommunityId = /^[a-f\d]{24}$/i.test(String(communityId || ""));
   const [tab, setTab] = useState("posts");
   const [community, setCommunity] = useState(null);
   const [events, setEvents] = useState([]);
@@ -32,8 +66,19 @@ function Events() {
   const [eventForm, setEventForm] = useState({ title: "", description: "", date: "", location: "" });
   const canModerate = user?.role === "ADMIN" || user?.role === "MODERATOR";
   const canCreateEvent = canModerate;
+  const isDemoCommunity = !isValidCommunityId;
 
   const fetchCommunity = useCallback(async () => {
+    if (isDemoCommunity) {
+      setCommunity({
+        _id: communityId,
+        name: "Demo Community",
+        city: "Preview Mode",
+        members: []
+      });
+      return;
+    }
+
     try {
       const { data } = await API.get("/communities");
       setCommunity(data.find((c) => c._id === communityId) || null);
@@ -41,9 +86,14 @@ function Events() {
       setCommunity(null);
       setPageError((current) => current || getApiErrorMessage(error, "Failed to load community details."));
     }
-  }, [communityId]);
+  }, [communityId, isDemoCommunity]);
 
   const fetchEvents = useCallback(async () => {
+    if (isDemoCommunity) {
+      setEvents(demoEvents);
+      return;
+    }
+
     try {
       const { data } = await API.get(`/events/community/${communityId}`);
       setEvents(data);
@@ -51,9 +101,14 @@ function Events() {
       setEvents([]);
       setPageError((current) => current || getApiErrorMessage(error, "Failed to load events."));
     }
-  }, [communityId]);
+  }, [communityId, isDemoCommunity]);
 
   const fetchPosts = useCallback(async () => {
+    if (isDemoCommunity) {
+      setPosts(demoPosts);
+      return;
+    }
+
     try {
       const { data } = await API.get(`/posts/${communityId}`);
       setPosts(data);
@@ -61,9 +116,14 @@ function Events() {
       setPosts([]);
       setPageError((current) => current || getApiErrorMessage(error, "Failed to load posts."));
     }
-  }, [communityId]);
+  }, [communityId, isDemoCommunity]);
 
   const fetchCategories = useCallback(async () => {
+    if (isDemoCommunity) {
+      setCategories([]);
+      return;
+    }
+
     try {
       const { data } = await API.get("/categories");
       setCategories(data);
@@ -71,7 +131,7 @@ function Events() {
       setCategories([]);
       setPageError((current) => current || getApiErrorMessage(error, "Failed to load categories."));
     }
-  }, []);
+  }, [isDemoCommunity]);
 
   useEffect(() => {
     setPageError("");
@@ -80,6 +140,12 @@ function Events() {
     fetchPosts();
     fetchCategories();
   }, [fetchCommunity, fetchEvents, fetchPosts, fetchCategories]);
+
+  useEffect(() => {
+    if (isDemoCommunity) {
+      setPageError("This is a demo community preview. Open a real live community to create posts, comments, and events.");
+    }
+  }, [isDemoCommunity]);
 
   const isUpcoming = (dateValue) => {
     const now = new Date();
@@ -166,6 +232,10 @@ function Events() {
   const createPost = async (e) => {
     e.preventDefault();
     setPostError("");
+    if (isDemoCommunity) {
+      setPostError("Demo communities are read-only. Create or open a live approved community to publish posts.");
+      return;
+    }
     setIsCreatingPost(true);
     try {
       const payload = new FormData();
@@ -195,6 +265,10 @@ function Events() {
   const createEvent = async (e) => {
     e.preventDefault();
     setEventError("");
+    if (isDemoCommunity) {
+      setEventError("Demo communities are read-only. Create or open a live approved community to publish events.");
+      return;
+    }
     setIsCreatingEvent(true);
     try {
       await API.post("/events", { community: communityId, ...eventForm });
@@ -208,6 +282,7 @@ function Events() {
   };
 
   const joinEvent = async (eventId) => {
+    if (isDemoCommunity) return;
     try {
       setJoiningId(eventId);
       await API.post(`/events/${eventId}/join`);
@@ -218,11 +293,13 @@ function Events() {
   };
 
   const toggleLike = async (postId) => {
+    if (isDemoCommunity) return;
     await API.post(`/posts/${postId}/like`);
     await fetchPosts();
   };
 
   const sharePost = async (postId) => {
+    if (isDemoCommunity) return;
     await API.post(`/posts/${postId}/share`);
     await fetchPosts();
     if (navigator.clipboard) {
@@ -231,16 +308,19 @@ function Events() {
   };
 
   const deletePost = async (postId) => {
+    if (isDemoCommunity) return;
     await API.delete(`/posts/${postId}`);
     await fetchPosts();
   };
 
   const togglePin = async (postId) => {
+    if (isDemoCommunity) return;
     await API.put(`/posts/${postId}/pin`);
     await fetchPosts();
   };
 
   const addComment = async (postId) => {
+    if (isDemoCommunity) return;
     const text = (commentDrafts[postId] || "").trim();
     if (!text) return;
     await API.post(`/posts/${postId}/comment`, { text });
@@ -249,11 +329,13 @@ function Events() {
   };
 
   const deleteComment = async (postId, commentId) => {
+    if (isDemoCommunity) return;
     await API.delete(`/posts/${postId}/comment/${commentId}`);
     await fetchPosts();
   };
 
   const reportItem = async (targetType, targetId) => {
+    if (isDemoCommunity) return;
     const reason = window.prompt("Report reason (required):");
     if (!reason) return;
     const details = window.prompt("Extra details (optional):") || "";
