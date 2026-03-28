@@ -88,10 +88,57 @@ exports.login = async (req, res) => {
         _id: user._id,
         name: user.name,
         email: user.email,
-        role: user.role
+        role: user.role,
+        hometown: user.hometown
       }
     });
   } catch (error) {
     res.status(500).json({ message: "Login failed" });
+  }
+};
+
+exports.getMe = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id).select("name email role hometown createdAt");
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    res.json(user);
+  } catch (error) {
+    res.status(500).json({ message: "Failed to load profile" });
+  }
+};
+
+exports.updateMe = async (req, res) => {
+  try {
+    const { name, hometown } = req.body;
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (typeof name === "string" && name.trim()) {
+      user.name = name.trim();
+    }
+
+    if (typeof hometown === "string") {
+      user.hometown = hometown.trim();
+    }
+
+    await user.save();
+
+    res.json({
+      message: "Profile updated",
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        hometown: user.hometown
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Failed to update profile" });
   }
 };

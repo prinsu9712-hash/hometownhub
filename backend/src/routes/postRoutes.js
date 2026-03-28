@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const { protect } = require("../middleware/authMiddleware");
+const upload = require("../middleware/uploadMiddleware");
 
 const {
   createPost,
@@ -14,7 +15,7 @@ const {
   pinPost
 } = require("../controllers/postController");
 
-router.post("/", protect, createPost);
+router.post("/", protect, upload.single("image"), createPost);
 router.get("/highlights", getHighlightedPosts);
 router.get("/:communityId", getPosts);
 router.post("/:id/like", protect, likePost);

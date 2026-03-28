@@ -170,7 +170,7 @@ function Communities() {
   const [form, setForm] = useState({
     name: "",
     city: "",
-    description: "",
+    description: ""
   });
   const navigate = useNavigate();
   const formRef = useRef(null);
@@ -228,8 +228,6 @@ function Communities() {
     return results;
   }, [filtered, stateFilter, cityFilter]);
 
-  const canCreateCommunity = user?.role === "ADMIN";
-
   const isMember = useCallback(
     (community) =>
       Boolean(
@@ -272,6 +270,9 @@ function Communities() {
     try {
       await API.post("/communities", form);
       setForm({ name: "", city: "", description: "" });
+      setCreateError(user?.role === "ADMIN"
+        ? "Community created successfully."
+        : "Community request submitted for admin approval.");
       await fetchCommunities();
     } catch (error) {
       setCreateError(
@@ -443,16 +444,18 @@ function Communities() {
           onChange={(e) => setSearch(e.target.value)}
         />
 
-        {canCreateCommunity && (
+        {user && (
           <form
             ref={formRef}
             onSubmit={createCommunity}
             className="mb-8 glass-tile border-stone-200/90 p-5"
           >
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-stone-900">Create Community</h3>
+              <h3 className="text-lg font-semibold text-stone-900">
+                {user?.role === "ADMIN" ? "Create Community" : "Request Community"}
+              </h3>
               <span className="text-xs font-semibold uppercase tracking-[0.2em] text-stone-500">
-                Admin only
+                {user?.role === "ADMIN" ? "Admin direct publish" : "Requires admin approval"}
               </span>
             </div>
             <div className="grid gap-3 md:grid-cols-2">
@@ -481,12 +484,18 @@ function Communities() {
               />
             </div>
             {createError && (
-              <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm font-medium text-red-700">
+              <p className={`mt-3 rounded-lg px-3 py-2 text-sm font-medium ${
+                createError.toLowerCase().includes("successfully") || createError.toLowerCase().includes("submitted")
+                  ? "bg-emerald-50 text-emerald-700"
+                  : "bg-red-50 text-red-700"
+              }`}>
                 {createError}
               </p>
             )}
             <button type="submit" disabled={isCreating} className="primary-btn mt-4">
-              {isCreating ? "Creating..." : "Create Community"}
+              {isCreating
+                ? (user?.role === "ADMIN" ? "Creating..." : "Submitting...")
+                : (user?.role === "ADMIN" ? "Create Community" : "Submit Request")}
             </button>
           </form>
         )}

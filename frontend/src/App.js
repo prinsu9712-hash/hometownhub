@@ -10,6 +10,7 @@ import Events from "./pages/Events";
 import Notifications from "./pages/Notifications";
 import Admin from "./pages/Admin";
 import Onboarding from "./pages/Onboarding";
+import Profile from "./pages/Profile";
 
 import PrivateRoute from "./components/PrivateRoute";
 import Navbar from "./components/Navbar";
@@ -56,6 +57,15 @@ function App() {
             element={
               <PrivateRoute>
                 <Notifications />
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path="/profile"
+            element={
+              <PrivateRoute>
+                <Profile />
               </PrivateRoute>
             }
           />

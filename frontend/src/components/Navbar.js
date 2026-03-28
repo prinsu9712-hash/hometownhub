@@ -63,6 +63,9 @@ function Navbar() {
             <NavLink className={userLinkStyle} to="/communities">
               Communities
             </NavLink>
+            <NavLink className={userLinkStyle} to="/profile">
+              Profile
+            </NavLink>
             <NavLink className={userLinkStyle} to="/notifications">
               Notifications
             </NavLink>

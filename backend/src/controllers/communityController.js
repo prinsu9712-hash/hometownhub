@@ -8,6 +8,7 @@ const canModerateCommunity = (community, user) =>
 exports.createCommunity = async (req, res) => {
   try {
     const { name, city, description, rules, guidelines } = req.body;
+    const isAdmin = req.user.role === "ADMIN";
 
     const community = await Community.create({
       name,
@@ -16,11 +17,15 @@ exports.createCommunity = async (req, res) => {
       rules,
       guidelines,
       createdBy: req.user._id,
-      members: [req.user._id]
+      members: isAdmin ? [req.user._id] : [],
+      status: isAdmin ? "APPROVED" : "PENDING",
+      approvedBy: isAdmin ? req.user._id : undefined
     });
 
     res.status(201).json({
-      message: "Community created successfully",
+      message: isAdmin
+        ? "Community created successfully"
+        : "Community request submitted for admin approval",
       community
     });
   } catch (error) {
@@ -31,7 +36,7 @@ exports.createCommunity = async (req, res) => {
 exports.getAllCommunities = async (req, res) => {
   try {
     const { search, city } = req.query;
-    const filter = { isDeleted: false };
+    const filter = { isDeleted: false, status: "APPROVED" };
 
     if (search) {
       filter.name = { $regex: search, $options: "i" };
@@ -57,7 +62,7 @@ exports.joinCommunity = async (req, res) => {
   try {
     const community = await Community.findById(req.params.id);
 
-    if (!community || community.isDeleted) {
+    if (!community || community.isDeleted || community.status !== "APPROVED") {
       return res.status(404).json({ message: "Community not found" });
     }
 
@@ -92,7 +97,7 @@ exports.leaveCommunity = async (req, res) => {
   try {
     const community = await Community.findById(req.params.id);
 
-    if (!community || community.isDeleted) {
+    if (!community || community.isDeleted || community.status !== "APPROVED") {
       return res.status(404).json({ message: "Community not found" });
     }
 
@@ -213,6 +218,53 @@ exports.softDeleteCommunity = async (req, res) => {
     await community.save();
 
     res.json({ message: "Community deleted" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.getCommunityRequests = async (req, res) => {
+  try {
+    const requests = await Community.find({
+      isDeleted: false,
+      status: { $in: ["PENDING", "REJECTED"] }
+    })
+      .populate("createdBy", "name email hometown")
+      .sort({ createdAt: -1 });
+
+    res.json(requests);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.updateCommunityRequestStatus = async (req, res) => {
+  try {
+    const { status, approvalNote } = req.body;
+
+    if (!["APPROVED", "REJECTED"].includes(status)) {
+      return res.status(400).json({ message: "Invalid request status" });
+    }
+
+    const community = await Community.findById(req.params.id);
+    if (!community || community.isDeleted) {
+      return res.status(404).json({ message: "Community request not found" });
+    }
+
+    community.status = status;
+    community.approvalNote = approvalNote || "";
+    community.approvedBy = req.user._id;
+
+    if (status === "APPROVED" && !community.members.some((id) => id.toString() === community.createdBy.toString())) {
+      community.members.push(community.createdBy);
+    }
+
+    await community.save();
+
+    res.json({
+      message: status === "APPROVED" ? "Community request approved" : "Community request rejected",
+      community
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

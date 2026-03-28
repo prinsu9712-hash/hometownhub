@@ -8,6 +8,8 @@ const {
   getAllCommunities,
   joinCommunity,
   leaveCommunity,
+  getCommunityRequests,
+  updateCommunityRequestStatus,
   getPendingRequests,
   approveRequest,
   rejectRequest,
@@ -15,8 +17,10 @@ const {
   softDeleteCommunity
 } = require("../controllers/communityController");
 
-router.post("/", protect, authorize("ADMIN"), createCommunity);
+router.post("/", protect, createCommunity);
 router.get("/", getAllCommunities);
+router.get("/requests/all", protect, authorize("ADMIN"), getCommunityRequests);
+router.put("/requests/:id/status", protect, authorize("ADMIN"), updateCommunityRequestStatus);
 router.post("/:id/join", protect, joinCommunity);
 router.post("/:id/leave", protect, leaveCommunity);
 router.get("/:id/requests", protect, getPendingRequests);

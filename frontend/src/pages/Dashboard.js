@@ -20,6 +20,12 @@ function Dashboard() {
       badge: "Inbox",
     },
     {
+      title: "Profile",
+      desc: "Manage your hometown details and member identity.",
+      to: "/profile",
+      badge: "Me",
+    },
+    {
       title: "Admin",
       desc: "Moderate events, users, and platform activities.",
       to: "/admin",

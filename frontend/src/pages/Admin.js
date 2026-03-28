@@ -13,6 +13,7 @@ function Admin() {
   const [reports, setReports] = useState([]);
   const [categories, setCategories] = useState([]);
   const [onboarding, setOnboarding] = useState([]);
+  const [communityRequests, setCommunityRequests] = useState([]);
   const [newCategory, setNewCategory] = useState({ name: "", description: "" });
   const [loadError, setLoadError] = useState("");
   const [actionError, setActionError] = useState("");
@@ -28,14 +29,16 @@ function Admin() {
       eventsResult,
       reportsResult,
       categoriesResult,
-      onboardingResult
+      onboardingResult,
+      communityRequestsResult
     ] = await Promise.allSettled([
       API.get("/admin/dashboard"),
       API.get("/admin/users"),
       API.get("/events/admin/all"),
       API.get("/reports"),
       API.get("/categories"),
-      API.get("/onboarding")
+      API.get("/onboarding"),
+      API.get("/communities/requests/all")
     ]);
 
     if (statsResult.status === "fulfilled") setStats(statsResult.value.data);
@@ -44,6 +47,7 @@ function Admin() {
     if (reportsResult.status === "fulfilled") setReports(reportsResult.value.data);
     if (categoriesResult.status === "fulfilled") setCategories(categoriesResult.value.data);
     if (onboardingResult.status === "fulfilled") setOnboarding(onboardingResult.value.data);
+    if (communityRequestsResult.status === "fulfilled") setCommunityRequests(communityRequestsResult.value.data);
 
     const firstFailure = [
       statsResult,
@@ -51,7 +55,8 @@ function Admin() {
       eventsResult,
       reportsResult,
       categoriesResult,
-      onboardingResult
+      onboardingResult,
+      communityRequestsResult
     ].find((result) => result.status === "rejected");
 
     if (firstFailure?.status === "rejected") {
@@ -120,6 +125,14 @@ function Admin() {
     );
   };
 
+  const updateCommunityRequestStatus = async (id, status) => {
+    const approvalNote = window.prompt("Approval note (optional):") || "";
+    await runAdminAction(
+      () => API.put(`/communities/requests/${id}/status`, { status, approvalNote }),
+      "Failed to update community request status."
+    );
+  };
+
   if (user?.role !== "ADMIN") {
     return (
       <Layout>
@@ -170,6 +183,7 @@ function Admin() {
           {tabButton("reports", "Reports")}
           {tabButton("categories", "Categories")}
           {tabButton("onboarding", "Onboarding")}
+          {tabButton("communityRequests", "Community Requests")}
         </div>
 
         {isLoading && (
@@ -296,6 +310,40 @@ function Admin() {
               </article>
             ))}
             {onboarding.length === 0 && <p className="text-sm text-stone-600">No onboarding requests.</p>}
+          </div>
+        )}
+
+        {tab === "communityRequests" && (
+          <div className="space-y-3">
+            {communityRequests.map((request) => (
+              <article key={request._id} className="glass-tile p-4">
+                <p className="font-semibold text-stone-900">{request.name}</p>
+                <p className="mt-1 text-sm text-stone-600">
+                  {request.city} | Requested by {request.createdBy?.name || "Unknown"}
+                </p>
+                <p className="mt-2 text-sm text-stone-700">{request.description || "No description"}</p>
+                <p className="mt-2 text-sm text-stone-600">Status: {request.status}</p>
+                <div className="mt-3 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => updateCommunityRequestStatus(request._id, "APPROVED")}
+                    className="rounded-lg bg-emerald-100 px-3 py-1.5 text-sm font-semibold text-emerald-700"
+                  >
+                    Approve
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => updateCommunityRequestStatus(request._id, "REJECTED")}
+                    className="rounded-lg bg-rose-100 px-3 py-1.5 text-sm font-semibold text-rose-700"
+                  >
+                    Reject
+                  </button>
+                </div>
+              </article>
+            ))}
+            {communityRequests.length === 0 && (
+              <p className="text-sm text-stone-600">No community creation requests.</p>
+            )}
           </div>
         )}
       </section>

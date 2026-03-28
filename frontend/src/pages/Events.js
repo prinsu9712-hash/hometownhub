@@ -1,7 +1,7 @@
 import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import Layout from "../components/Layout";
-import API, { getApiErrorMessage } from "../api";
+import API, { getApiErrorMessage, getUploadUrl } from "../api";
 import { AuthContext } from "../context/AuthContext";
 
 function Events() {
@@ -26,7 +26,8 @@ function Events() {
     content: "",
     isAnnouncement: false,
     category: "",
-    tags: ""
+    tags: "",
+    image: null
   });
   const [eventForm, setEventForm] = useState({ title: "", description: "", date: "", location: "" });
   const canModerate = user?.role === "ADMIN" || user?.role === "MODERATOR";
@@ -167,14 +168,22 @@ function Events() {
     setPostError("");
     setIsCreatingPost(true);
     try {
-      await API.post("/posts", {
-        community: communityId,
-        content: postForm.content,
-        isAnnouncement: postForm.isAnnouncement,
-        category: postForm.category,
-        tags: postForm.tags
+      const payload = new FormData();
+      payload.append("community", communityId);
+      payload.append("content", postForm.content);
+      payload.append("isAnnouncement", String(postForm.isAnnouncement));
+      payload.append("category", postForm.category);
+      payload.append("tags", postForm.tags);
+      if (postForm.image) {
+        payload.append("image", postForm.image);
+      }
+
+      await API.post("/posts", payload, {
+        headers: {
+          "Content-Type": "multipart/form-data"
+        }
       });
-      setPostForm({ content: "", isAnnouncement: false, category: "", tags: "" });
+      setPostForm({ content: "", isAnnouncement: false, category: "", tags: "", image: null });
       await fetchPosts();
     } catch (error) {
       setPostError(error?.response?.data?.message || "Failed to create post");
@@ -294,6 +303,12 @@ function Events() {
                 </select>
                 <input className="soft-input" placeholder="Tags (comma separated)" value={postForm.tags} onChange={(e) => setPostForm((prev) => ({ ...prev, tags: e.target.value }))} />
               </div>
+              <input
+                className="soft-input mt-3"
+                type="file"
+                accept="image/png,image/jpeg,image/jpg"
+                onChange={(e) => setPostForm((prev) => ({ ...prev, image: e.target.files?.[0] || null }))}
+              />
               {postError && <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{postError}</p>}
               <button type="submit" className="primary-btn mt-4" disabled={isCreatingPost}>{isCreatingPost ? "Posting..." : "Publish Post"}</button>
             </form>
@@ -317,6 +332,13 @@ function Events() {
                       {(post.tags || []).slice(0, 3).map((tag) => <span key={tag} className="inline-flex rounded-full bg-stone-100 px-3 py-1 text-xs font-semibold text-stone-700">#{tag}</span>)}
                     </div>
                     <p className="mt-3 whitespace-pre-wrap text-stone-800">{post.content}</p>
+                    {post.image && (
+                      <img
+                        src={getUploadUrl(post.image)}
+                        alt={post.title || "Post attachment"}
+                        className="mt-3 max-h-80 w-full rounded-2xl object-cover"
+                      />
+                    )}
                     <div className="mt-3 flex flex-wrap items-center gap-2">
                       <button type="button" onClick={() => toggleLike(post._id)} className={`rounded-lg px-3 py-1 text-sm font-semibold ${isLikedPost(post) ? "bg-rose-100 text-rose-700" : "bg-stone-100 text-stone-700"}`}>{isLikedPost(post) ? "Liked" : "Like"} ({post.likes?.length || 0})</button>
                       <button type="button" onClick={() => sharePost(post._id)} className="rounded-lg bg-sky-100 px-3 py-1 text-sm font-semibold text-sky-700">Share ({post.shares || 0})</button>

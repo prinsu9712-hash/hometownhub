@@ -38,6 +38,19 @@ const communitySchema = new mongoose.Schema(
         ref: "User"
       }
     ],
+    status: {
+      type: String,
+      enum: ["PENDING", "APPROVED", "REJECTED"],
+      default: "PENDING"
+    },
+    approvalNote: {
+      type: String,
+      default: ""
+    },
+    approvedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User"
+    },
 
     isDeleted: {
       type: Boolean,

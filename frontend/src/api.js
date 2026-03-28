@@ -20,6 +20,7 @@ const configuredApiUrl =
     : "");
 
 export const API_BASE_URL = normalizeApiBaseUrl(configuredApiUrl);
+export const API_ORIGIN = API_BASE_URL.replace(/\/api$/, "");
 
 const API = axios.create({
   baseURL: API_BASE_URL
@@ -51,6 +52,12 @@ export const getApiErrorMessage = (error, fallback = "Request failed.") => {
   }
 
   return error?.response?.data?.message || error?.response?.data?.error || fallback;
+};
+
+export const getUploadUrl = (filePath) => {
+  if (!filePath) return "";
+  if (/^https?:\/\//i.test(filePath)) return filePath;
+  return `${API_ORIGIN}/uploads/${String(filePath).replace(/^\/+/, "")}`;
 };
 
 export default API;

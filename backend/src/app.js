@@ -3,6 +3,7 @@ const cors = require("cors");
 const helmet = require("helmet");
 const morgan = require("morgan");
 const rateLimit = require("express-rate-limit");
+const path = require("path");
 
 const app = express();
 
@@ -53,6 +54,7 @@ app.use(cors(corsOptions));
 
 // Parse JSON body
 app.use(express.json());
+app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
 // Logging
 app.use(morgan("dev"));
