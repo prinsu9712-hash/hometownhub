@@ -11,8 +11,12 @@ const app = express();
    GLOBAL MIDDLEWARE
 ================================ */
 
-// Security headers
-app.use(helmet());
+// Keep security headers, but allow uploaded images to render cross-origin in the frontend.
+app.use(
+  helmet({
+    crossOriginResourcePolicy: false
+  })
+);
 
 // 🔥 PROPER CORS CONFIG
 const baseOrigins = [
@@ -54,7 +58,14 @@ app.use(cors(corsOptions));
 
 // Parse JSON body
 app.use(express.json());
-app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
+app.use(
+  "/uploads",
+  express.static(path.join(process.cwd(), "uploads"), {
+    setHeaders: (res) => {
+      res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+    }
+  })
+);
 
 // Logging
 app.use(morgan("dev"));

@@ -6,13 +6,28 @@ const app = require("./src/app");
 
 const server = http.createServer(app);
 const PORT = process.env.PORT || 5050;
+const requiredEnv = ["MONGO_URI", "JWT_SECRET"];
+const missingEnv = requiredEnv.filter((key) => !process.env[key]);
+
+const socketOrigins = [
+  "http://localhost:3000",
+  "http://localhost:3001"
+];
+
+if (process.env.FRONTEND_URL) {
+  socketOrigins.push(process.env.FRONTEND_URL);
+}
+
+for (const origin of (process.env.FRONTEND_URLS || "").split(",")) {
+  const trimmedOrigin = origin.trim();
+  if (trimmedOrigin) {
+    socketOrigins.push(trimmedOrigin);
+  }
+}
 
 const io = new Server(server, {
   cors: {
-    origin: [
-      "http://localhost:3000",
-      "https://hometown-hub-backend.onrender.com"
-    ],
+    origin: Array.from(new Set(socketOrigins)),
     methods: ["GET", "POST"]
   }
 });
@@ -32,12 +47,22 @@ io.on("connection", (socket) => {
   });
 });
 
-// MongoDB
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => {
+const startServer = async () => {
+  if (missingEnv.length > 0) {
+    console.error(`Missing required environment variables: ${missingEnv.join(", ")}`);
+    process.exit(1);
+  }
+
+  try {
+    await mongoose.connect(process.env.MONGO_URI);
     console.log("MongoDB Connected");
     server.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
     });
-  })
-  .catch(err => console.log(err));
+  } catch (error) {
+    console.error("MongoDB connection failed:", error.message);
+    process.exit(1);
+  }
+};
+
+startServer();
