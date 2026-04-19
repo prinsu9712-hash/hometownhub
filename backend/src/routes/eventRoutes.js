@@ -15,8 +15,8 @@ const {
 
 router.get("/public", getPublicEvents);
 
-// Create event (ADMIN or MODERATOR)
-router.post("/", protect, authorize("ADMIN", "MODERATOR"), createEvent);
+// Any authenticated user can create an event
+router.post("/", protect, createEvent);
 
 // Get events by community
 router.get("/community/:communityId", protect, getEvents);

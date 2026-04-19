@@ -41,7 +41,7 @@ function Events() {
   const [eventForm, setEventForm] = useState({ title: "", description: "", date: "", location: "" });
 
   const canModerate = user?.role === "ADMIN" || user?.role === "MODERATOR";
-  const canCreateEvent = canModerate;
+  const canCreateEvent = Boolean(user?._id);
 
   const fetchCommunity = useCallback(async () => {
     const { data } = await API.get(`/communities/${communityId}`);

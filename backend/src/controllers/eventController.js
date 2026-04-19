@@ -9,8 +9,11 @@ const mongoose = require("mongoose");
 exports.createEvent = async (req, res) => {
   try {
     const { title, description, date, location, community } = req.body;
+    const normalizedTitle = String(title || "").trim();
+    const normalizedDescription = String(description || "").trim();
+    const normalizedLocation = String(location || "").trim();
 
-    if (!title || !date || !community) {
+    if (!normalizedTitle || !date || !community) {
       return res.status(400).json({ message: "Title, date and community are required" });
     }
 
@@ -20,10 +23,10 @@ exports.createEvent = async (req, res) => {
     }
 
     const event = await Event.create({
-      title,
-      description,
+      title: normalizedTitle,
+      description: normalizedDescription,
       date,
-      location,
+      location: normalizedLocation,
       image: req.file ? req.file.filename : null,
       community,
       createdBy: req.user._id,
@@ -36,7 +39,7 @@ exports.createEvent = async (req, res) => {
 
           const notification = await Notification.create({
             user: memberId,
-            message: `New event created: ${title}`,
+            message: `New event created: ${normalizedTitle}`,
             type: "EVENT"
           });
 
