@@ -17,7 +17,7 @@ const configuredApiUrl =
   process.env.REACT_APP_API_URL ||
   (typeof window !== "undefined" && window.location.hostname === "localhost"
     ? "http://localhost:5050"
-    : "");
+    : "https://hometown-hub-backend.onrender.com");
 
 export const API_BASE_URL = normalizeApiBaseUrl(configuredApiUrl);
 export const API_ORIGIN = API_BASE_URL.replace(/\/api$/, "");

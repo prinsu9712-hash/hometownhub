@@ -8,6 +8,7 @@ exports.register = async (req, res) => {
     const normalizedEmail = (email || "").trim().toLowerCase();
     const normalizedName = (name || "").trim();
     const normalizedHometown = (hometown || "").trim();
+    const envAdminEmail = (process.env.ADMIN_EMAIL || "").trim().toLowerCase();
 
     if (!normalizedName || !normalizedEmail || !password) {
       return res.status(400).json({ message: "Name, email and password are required" });
@@ -23,12 +24,15 @@ exports.register = async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 12);
+    const adminCount = await User.countDocuments({ role: "ADMIN" });
+    const shouldBecomeAdmin = adminCount === 0 || (envAdminEmail && normalizedEmail === envAdminEmail);
 
     const user = await User.create({
       name: normalizedName,
       email: normalizedEmail,
       password: hashedPassword,
-      hometown: normalizedHometown
+      hometown: normalizedHometown,
+      role: shouldBecomeAdmin ? "ADMIN" : "USER"
     });
 
     res.status(201).json({
@@ -37,7 +41,8 @@ exports.register = async (req, res) => {
         _id: user._id,
         name: user.name,
         email: user.email,
-        role: user.role
+        role: user.role,
+        hometown: user.hometown
       }
     });
 
