@@ -1,8 +1,31 @@
 const Category = require("../models/Category");
 
+const DEFAULT_CATEGORIES = [
+  { name: "Announcement", description: "Important local alerts and official community notices." },
+  { name: "Discussion", description: "Open community conversations and local questions." },
+  { name: "Event", description: "Upcoming gatherings, celebrations, and meetups." },
+  { name: "Support", description: "Requests for help, volunteering, and support groups." },
+  { name: "News", description: "Local news, updates, and civic information." }
+];
+
+const ensureDefaultCategories = async () => {
+  const existing = await Category.find({ isActive: true }).sort({ name: 1 });
+  if (existing.length > 0) {
+    return existing;
+  }
+
+  try {
+    await Category.insertMany(DEFAULT_CATEGORIES, { ordered: false });
+  } catch (error) {
+    // Ignore duplicate key race conditions across concurrent first-load requests.
+  }
+
+  return Category.find({ isActive: true }).sort({ name: 1 });
+};
+
 exports.getCategories = async (req, res) => {
   try {
-    const categories = await Category.find({ isActive: true }).sort({ name: 1 });
+    const categories = await ensureDefaultCategories();
     res.json(categories);
   } catch (error) {
     res.status(500).json({ message: "Failed to fetch categories", error: error.message });

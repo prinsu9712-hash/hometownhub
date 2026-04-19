@@ -10,6 +10,15 @@ exports.createEvent = async (req, res) => {
   try {
     const { title, description, date, location, community } = req.body;
 
+    if (!title || !date || !community) {
+      return res.status(400).json({ message: "Title, date and community are required" });
+    }
+
+    const communityData = await Community.findById(community);
+    if (!communityData || communityData.isDeleted || communityData.status !== "APPROVED") {
+      return res.status(404).json({ message: "Community not found" });
+    }
+
     const event = await Event.create({
       title,
       description,
@@ -20,8 +29,6 @@ exports.createEvent = async (req, res) => {
       createdBy: req.user._id,
       attendees: [req.user._id]
     });
-
-    const communityData = await Community.findById(community);
 
     if (communityData) {
       for (let memberId of communityData.members) {

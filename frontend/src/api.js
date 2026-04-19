@@ -57,7 +57,10 @@ export const getApiErrorMessage = (error, fallback = "Request failed.") => {
 export const getUploadUrl = (filePath) => {
   if (!filePath) return "";
   if (/^https?:\/\//i.test(filePath)) return filePath;
-  return `${API_ORIGIN}/uploads/${String(filePath).replace(/^\/+/, "")}`;
+  const normalizedPath = String(filePath)
+    .replace(/^\/+/, "")
+    .replace(/^uploads\/+/i, "");
+  return `${API_ORIGIN}/uploads/${normalizedPath}`;
 };
 
 export default API;

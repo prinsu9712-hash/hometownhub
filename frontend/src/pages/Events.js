@@ -4,43 +4,17 @@ import Layout from "../components/Layout";
 import API, { getApiErrorMessage, getUploadUrl } from "../api";
 import { AuthContext } from "../context/AuthContext";
 
-const demoPosts = [
-  {
-    _id: "demo-post-1",
-    author: { _id: "demo-user-1", name: "Demo Moderator" },
-    content: "Welcome to the demo community feed. Live posting works after you open a real approved community from the database.",
-    isAnnouncement: true,
-    isPinned: true,
-    category: "Announcement",
-    tags: ["demo", "welcome"],
-    likes: [],
-    comments: [
-      {
-        _id: "demo-comment-1",
-        user: { _id: "demo-user-2", name: "Community Member" },
-        text: "Looks good. Create a real community to start posting live."
-      }
-    ],
-    shares: 0,
-    createdAt: "2026-03-28T10:00:00.000Z"
-  }
-];
-
-const demoEvents = [
-  {
-    _id: "demo-event-1",
-    title: "Sample Community Meetup",
-    description: "This is a preview event card. Real event creation is available inside approved live communities.",
-    date: "2026-04-05T09:30:00.000Z",
-    location: "Town Hall",
-    attendees: []
-  }
+const DEFAULT_POST_CATEGORIES = [
+  "Announcement",
+  "Discussion",
+  "Event",
+  "Support",
+  "News"
 ];
 
 function Events() {
   const { communityId } = useParams();
   const { user } = useContext(AuthContext);
-  const isValidCommunityId = /^[a-f\d]{24}$/i.test(String(communityId || ""));
   const [tab, setTab] = useState("posts");
   const [community, setCommunity] = useState(null);
   const [events, setEvents] = useState([]);
@@ -53,6 +27,7 @@ function Events() {
   const [joiningId, setJoiningId] = useState(null);
   const [postError, setPostError] = useState("");
   const [eventError, setEventError] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
   const [isCreatingPost, setIsCreatingPost] = useState(false);
   const [isCreatingEvent, setIsCreatingEvent] = useState(false);
   const [commentDrafts, setCommentDrafts] = useState({});
@@ -64,88 +39,71 @@ function Events() {
     image: null
   });
   const [eventForm, setEventForm] = useState({ title: "", description: "", date: "", location: "" });
+
   const canModerate = user?.role === "ADMIN" || user?.role === "MODERATOR";
   const canCreateEvent = canModerate;
-  const isDemoCommunity = !isValidCommunityId;
 
   const fetchCommunity = useCallback(async () => {
-    if (isDemoCommunity) {
-      setCommunity({
-        _id: communityId,
-        name: "Demo Community",
-        city: "Preview Mode",
-        members: []
-      });
-      return;
-    }
-
-    try {
-      const { data } = await API.get("/communities");
-      setCommunity(data.find((c) => c._id === communityId) || null);
-    } catch (error) {
-      setCommunity(null);
-      setPageError((current) => current || getApiErrorMessage(error, "Failed to load community details."));
-    }
-  }, [communityId, isDemoCommunity]);
+    const { data } = await API.get(`/communities/${communityId}`);
+    setCommunity(data || null);
+  }, [communityId]);
 
   const fetchEvents = useCallback(async () => {
-    if (isDemoCommunity) {
-      setEvents(demoEvents);
-      return;
-    }
-
-    try {
-      const { data } = await API.get(`/events/community/${communityId}`);
-      setEvents(data);
-    } catch (error) {
-      setEvents([]);
-      setPageError((current) => current || getApiErrorMessage(error, "Failed to load events."));
-    }
-  }, [communityId, isDemoCommunity]);
+    const { data } = await API.get(`/events/community/${communityId}`);
+    setEvents(Array.isArray(data) ? data : []);
+  }, [communityId]);
 
   const fetchPosts = useCallback(async () => {
-    if (isDemoCommunity) {
-      setPosts(demoPosts);
-      return;
-    }
-
-    try {
-      const { data } = await API.get(`/posts/${communityId}`);
-      setPosts(data);
-    } catch (error) {
-      setPosts([]);
-      setPageError((current) => current || getApiErrorMessage(error, "Failed to load posts."));
-    }
-  }, [communityId, isDemoCommunity]);
+    const { data } = await API.get(`/posts/${communityId}`);
+    setPosts(Array.isArray(data) ? data : []);
+  }, [communityId]);
 
   const fetchCategories = useCallback(async () => {
-    if (isDemoCommunity) {
-      setCategories([]);
-      return;
-    }
+    const { data } = await API.get("/categories");
+    setCategories(Array.isArray(data) ? data : []);
+  }, []);
 
-    try {
-      const { data } = await API.get("/categories");
-      setCategories(data);
-    } catch (error) {
-      setCategories([]);
-      setPageError((current) => current || getApiErrorMessage(error, "Failed to load categories."));
-    }
-  }, [isDemoCommunity]);
-
-  useEffect(() => {
+  const refreshPageData = useCallback(async () => {
+    setIsLoading(true);
     setPageError("");
-    fetchCommunity();
-    fetchEvents();
-    fetchPosts();
-    fetchCategories();
-  }, [fetchCommunity, fetchEvents, fetchPosts, fetchCategories]);
+
+    const [communityResult, eventsResult, postsResult, categoriesResult] = await Promise.allSettled([
+      fetchCommunity(),
+      fetchEvents(),
+      fetchPosts(),
+      fetchCategories()
+    ]);
+
+    const firstFailure = [communityResult, eventsResult, postsResult, categoriesResult].find(
+      (result) => result.status === "rejected"
+    );
+
+    if (firstFailure?.status === "rejected") {
+      setPageError(getApiErrorMessage(firstFailure.reason, "Failed to load community hub data."));
+    }
+
+    if (communityResult.status === "rejected") {
+      setCommunity(null);
+    }
+
+    if (eventsResult.status === "rejected") {
+      setEvents([]);
+    }
+
+    if (postsResult.status === "rejected") {
+      setPosts([]);
+    }
+
+    if (categoriesResult.status === "rejected") {
+      setCategories([]);
+    }
+
+    setIsLoading(false);
+  }, [fetchCategories, fetchCommunity, fetchEvents, fetchPosts]);
 
   useEffect(() => {
-    if (isDemoCommunity) {
-      setPageError("This is a demo community preview. Open a real live community to create posts, comments, and events.");
-    }
-  }, [isDemoCommunity]);
+    refreshPageData();
+  }, [refreshPageData]);
 
   const isUpcoming = (dateValue) => {
     const now = new Date();
@@ -171,6 +129,7 @@ function Events() {
 
   const viewEvents = useMemo(() => {
     const query = search.trim().toLowerCase();
+
     return [...events]
       .filter((event) => {
         const title = (event.title || "").toLowerCase();
@@ -192,6 +151,7 @@ function Events() {
 
   const viewPosts = useMemo(() => {
     const query = search.trim().toLowerCase();
+
     return [...posts]
       .filter((post) => {
         const content = (post.content || "").toLowerCase();
@@ -222,6 +182,14 @@ function Events() {
     [posts, events]
   );
 
+  const categoryOptions = useMemo(() => {
+    if (categories.length > 0) {
+      return categories.map((category) => ({ id: category._id, name: category.name }));
+    }
+
+    return DEFAULT_POST_CATEGORIES.map((name) => ({ id: name, name }));
+  }, [categories]);
+
   const resetFilters = (name) => {
     setTab(name);
     setSearch("");
@@ -232,11 +200,8 @@ function Events() {
   const createPost = async (e) => {
     e.preventDefault();
     setPostError("");
-    if (isDemoCommunity) {
-      setPostError("Demo communities are read-only. Create or open a live approved community to publish posts.");
-      return;
-    }
     setIsCreatingPost(true);
+
     try {
       const payload = new FormData();
       payload.append("community", communityId);
@@ -244,6 +209,7 @@ function Events() {
       payload.append("isAnnouncement", String(postForm.isAnnouncement));
       payload.append("category", postForm.category);
       payload.append("tags", postForm.tags);
+
       if (postForm.image) {
         payload.append("image", postForm.image);
       }
@@ -253,10 +219,11 @@ function Events() {
           "Content-Type": "multipart/form-data"
         }
       });
+
       setPostForm({ content: "", isAnnouncement: false, category: "", tags: "", image: null });
       await fetchPosts();
     } catch (error) {
-      setPostError(error?.response?.data?.message || "Failed to create post");
+      setPostError(getApiErrorMessage(error, "Failed to create post"));
     } finally {
       setIsCreatingPost(false);
     }
@@ -265,82 +232,116 @@ function Events() {
   const createEvent = async (e) => {
     e.preventDefault();
     setEventError("");
-    if (isDemoCommunity) {
-      setEventError("Demo communities are read-only. Create or open a live approved community to publish events.");
-      return;
-    }
     setIsCreatingEvent(true);
+
     try {
       await API.post("/events", { community: communityId, ...eventForm });
       setEventForm({ title: "", description: "", date: "", location: "" });
       await fetchEvents();
     } catch (error) {
-      setEventError(error?.response?.data?.message || "Failed to create event");
+      setEventError(getApiErrorMessage(error, "Failed to create event"));
     } finally {
       setIsCreatingEvent(false);
     }
   };
 
   const joinEvent = async (eventId) => {
-    if (isDemoCommunity) return;
     try {
       setJoiningId(eventId);
       await API.post(`/events/${eventId}/join`);
       await fetchEvents();
+    } catch (error) {
+      setPageError(getApiErrorMessage(error, "Failed to join event."));
     } finally {
       setJoiningId(null);
     }
   };
 
   const toggleLike = async (postId) => {
-    if (isDemoCommunity) return;
-    await API.post(`/posts/${postId}/like`);
-    await fetchPosts();
+    try {
+      await API.post(`/posts/${postId}/like`);
+      await fetchPosts();
+    } catch (error) {
+      setPageError(getApiErrorMessage(error, "Failed to update like."));
+    }
   };
 
   const sharePost = async (postId) => {
-    if (isDemoCommunity) return;
-    await API.post(`/posts/${postId}/share`);
-    await fetchPosts();
-    if (navigator.clipboard) {
-      await navigator.clipboard.writeText(window.location.href);
+    try {
+      await API.post(`/posts/${postId}/share`);
+      await fetchPosts();
+      if (navigator.clipboard) {
+        await navigator.clipboard.writeText(window.location.href);
+      }
+    } catch (error) {
+      setPageError(getApiErrorMessage(error, "Failed to share post."));
     }
   };
 
   const deletePost = async (postId) => {
-    if (isDemoCommunity) return;
-    await API.delete(`/posts/${postId}`);
-    await fetchPosts();
+    try {
+      await API.delete(`/posts/${postId}`);
+      await fetchPosts();
+    } catch (error) {
+      setPageError(getApiErrorMessage(error, "Failed to remove post."));
+    }
   };
 
   const togglePin = async (postId) => {
-    if (isDemoCommunity) return;
-    await API.put(`/posts/${postId}/pin`);
-    await fetchPosts();
+    try {
+      await API.put(`/posts/${postId}/pin`);
+      await fetchPosts();
+    } catch (error) {
+      setPageError(getApiErrorMessage(error, "Failed to update pin state."));
+    }
   };
 
   const addComment = async (postId) => {
-    if (isDemoCommunity) return;
     const text = (commentDrafts[postId] || "").trim();
     if (!text) return;
-    await API.post(`/posts/${postId}/comment`, { text });
-    setCommentDrafts((prev) => ({ ...prev, [postId]: "" }));
-    await fetchPosts();
+
+    try {
+      await API.post(`/posts/${postId}/comment`, { text });
+      setCommentDrafts((prev) => ({ ...prev, [postId]: "" }));
+      await fetchPosts();
+    } catch (error) {
+      setPageError(getApiErrorMessage(error, "Failed to add comment."));
+    }
   };
 
   const deleteComment = async (postId, commentId) => {
-    if (isDemoCommunity) return;
-    await API.delete(`/posts/${postId}/comment/${commentId}`);
-    await fetchPosts();
+    try {
+      await API.delete(`/posts/${postId}/comment/${commentId}`);
+      await fetchPosts();
+    } catch (error) {
+      setPageError(getApiErrorMessage(error, "Failed to remove comment."));
+    }
   };
 
   const reportItem = async (targetType, targetId) => {
-    if (isDemoCommunity) return;
     const reason = window.prompt("Report reason (required):");
     if (!reason) return;
+
     const details = window.prompt("Extra details (optional):") || "";
-    await API.post("/reports", { targetType, targetId, reason, details });
+
+    try {
+      await API.post("/reports", { targetType, targetId, reason, details });
+    } catch (error) {
+      setPageError(getApiErrorMessage(error, "Failed to submit report."));
+    }
   };
+
+  if (!isLoading && !community) {
+    return (
+      <Layout>
+        <section className="hero-glass p-8 sm:p-10">
+          <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800">
+            Community not found or not approved yet.
+          </div>
+        </section>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
@@ -348,7 +349,9 @@ function Events() {
         <div className="mb-6 rounded-2xl bg-gradient-to-r from-[#8d5a34] via-[#b78656] to-[#e39d58] p-6 text-white">
           <p className="text-xs font-semibold uppercase tracking-[0.2em]">Digital Community Space</p>
           <h2 className="mt-2 text-3xl font-bold sm:text-4xl">{community?.name || "Community Hub"}</h2>
-          <p className="mt-2 text-sm text-white/90">{community?.city || "City"} | {community?.members?.length || 0} members</p>
+          <p className="mt-2 text-sm text-white/90">
+            {community?.city || "City"} | {community?.members?.length || 0} members
+          </p>
         </div>
 
         <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
@@ -359,6 +362,12 @@ function Events() {
           <div className="glass-tile p-4"><p className="section-kicker">Upcoming</p><p className="mt-2 text-2xl font-bold text-emerald-700">{stats.upcoming}</p></div>
         </div>
 
+        {isLoading && (
+          <div className="mb-6 rounded-xl border border-stone-200 bg-white/80 px-4 py-3 text-sm text-stone-700">
+            Loading community hub...
+          </div>
+        )}
+
         {pageError && (
           <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800">
             {pageError}
@@ -366,8 +375,24 @@ function Events() {
         )}
 
         <div className="mb-6 flex flex-wrap gap-2">
-          <button type="button" onClick={() => resetFilters("posts")} className={`rounded-xl px-4 py-2 text-sm font-semibold ${tab === "posts" ? "bg-gradient-to-r from-brand to-brand2 text-white" : "bg-white/80 text-stone-700"}`}>Posts</button>
-          <button type="button" onClick={() => resetFilters("events")} className={`rounded-xl px-4 py-2 text-sm font-semibold ${tab === "events" ? "bg-gradient-to-r from-brand to-brand2 text-white" : "bg-white/80 text-stone-700"}`}>Events</button>
+          <button
+            type="button"
+            onClick={() => resetFilters("posts")}
+            className={`rounded-xl px-4 py-2 text-sm font-semibold ${
+              tab === "posts" ? "bg-gradient-to-r from-brand to-brand2 text-white" : "bg-white/80 text-stone-700"
+            }`}
+          >
+            Posts
+          </button>
+          <button
+            type="button"
+            onClick={() => resetFilters("events")}
+            className={`rounded-xl px-4 py-2 text-sm font-semibold ${
+              tab === "events" ? "bg-gradient-to-r from-brand to-brand2 text-white" : "bg-white/80 text-stone-700"
+            }`}
+          >
+            Events
+          </button>
         </div>
 
         {tab === "posts" && (
@@ -375,30 +400,79 @@ function Events() {
             <form onSubmit={createPost} className="glass-tile mb-6 p-5">
               <div className="mb-3 flex items-center justify-between">
                 <h3 className="text-lg font-semibold">Create Post</h3>
-                <label className="text-sm font-medium text-stone-700"><input type="checkbox" checked={postForm.isAnnouncement} onChange={(e) => setPostForm((prev) => ({ ...prev, isAnnouncement: e.target.checked }))} className="mr-2" />Announcement</label>
+                <label className="text-sm font-medium text-stone-700">
+                  <input
+                    type="checkbox"
+                    checked={postForm.isAnnouncement}
+                    onChange={(e) => setPostForm((prev) => ({ ...prev, isAnnouncement: e.target.checked }))}
+                    className="mr-2"
+                  />
+                  Announcement
+                </label>
               </div>
-              <textarea className="soft-input min-h-[100px]" value={postForm.content} onChange={(e) => setPostForm((prev) => ({ ...prev, content: e.target.value }))} placeholder="Share updates, local news, or discussion..." required />
+
+              <textarea
+                className="soft-input min-h-[100px]"
+                value={postForm.content}
+                onChange={(e) => setPostForm((prev) => ({ ...prev, content: e.target.value }))}
+                placeholder="Share updates, local news, or discussion..."
+                required
+              />
+
               <div className="mt-3 grid gap-3 md:grid-cols-2">
-                <select className="soft-input" value={postForm.category} onChange={(e) => setPostForm((prev) => ({ ...prev, category: e.target.value }))}>
+                <select
+                  className="soft-input"
+                  value={postForm.category}
+                  onChange={(e) => setPostForm((prev) => ({ ...prev, category: e.target.value }))}
+                >
                   <option value="">Select category</option>
-                  {categories.map((category) => <option key={category._id} value={category.name}>{category.name}</option>)}
+                  {categoryOptions.map((category) => (
+                    <option key={category.id} value={category.name}>
+                      {category.name}
+                    </option>
+                  ))}
                 </select>
-                <input className="soft-input" placeholder="Tags (comma separated)" value={postForm.tags} onChange={(e) => setPostForm((prev) => ({ ...prev, tags: e.target.value }))} />
+                <input
+                  className="soft-input"
+                  placeholder="Tags (comma separated)"
+                  value={postForm.tags}
+                  onChange={(e) => setPostForm((prev) => ({ ...prev, tags: e.target.value }))}
+                />
               </div>
+
               <input
                 className="soft-input mt-3"
                 type="file"
                 accept="image/png,image/jpeg,image/jpg"
                 onChange={(e) => setPostForm((prev) => ({ ...prev, image: e.target.files?.[0] || null }))}
               />
-              {postError && <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{postError}</p>}
-              <button type="submit" className="primary-btn mt-4" disabled={isCreatingPost}>{isCreatingPost ? "Posting..." : "Publish Post"}</button>
+
+              {postError && (
+                <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{postError}</p>
+              )}
+
+              <button type="submit" className="primary-btn mt-4" disabled={isCreatingPost}>
+                {isCreatingPost ? "Posting..." : "Publish Post"}
+              </button>
             </form>
 
             <div className="mb-6 grid gap-3 md:grid-cols-12">
-              <input className="soft-input md:col-span-5" placeholder="Search posts" value={search} onChange={(e) => setSearch(e.target.value)} />
-              <select className="soft-input md:col-span-4" value={filter} onChange={(e) => setFilter(e.target.value)}><option value="all">All</option><option value="announcement">Announcements</option><option value="discussion">Discussions</option><option value="pinned">Pinned</option></select>
-              <select className="soft-input md:col-span-3" value={sortBy} onChange={(e) => setSortBy(e.target.value)}><option value="latest">Latest</option><option value="likesDesc">Most liked</option></select>
+              <input
+                className="soft-input md:col-span-5"
+                placeholder="Search posts"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+              <select className="soft-input md:col-span-4" value={filter} onChange={(e) => setFilter(e.target.value)}>
+                <option value="all">All</option>
+                <option value="announcement">Announcements</option>
+                <option value="discussion">Discussions</option>
+                <option value="pinned">Pinned</option>
+              </select>
+              <select className="soft-input md:col-span-3" value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+                <option value="latest">Latest</option>
+                <option value="likesDesc">Most liked</option>
+              </select>
             </div>
 
             <div className="space-y-4">
@@ -406,27 +480,82 @@ function Events() {
                 const canDeletePost = canModerate || String(post.author?._id) === String(user?._id);
                 return (
                   <article key={post._id} className="glass-tile p-5">
-                    <p className="text-sm text-stone-500">{post.author?.name || "Member"} | {new Date(post.createdAt).toLocaleString()}</p>
+                    <p className="text-sm text-stone-500">
+                      {post.author?.name || "Member"} | {new Date(post.createdAt).toLocaleString()}
+                    </p>
                     <div className="mt-2 flex flex-wrap gap-2">
-                      {post.isAnnouncement && <span className="inline-flex rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">Announcement</span>}
-                      {post.isPinned && <span className="inline-flex rounded-full bg-indigo-100 px-3 py-1 text-xs font-semibold text-indigo-700">Pinned</span>}
-                      {post.category && <span className="inline-flex rounded-full bg-sky-100 px-3 py-1 text-xs font-semibold text-sky-700">{post.category}</span>}
-                      {(post.tags || []).slice(0, 3).map((tag) => <span key={tag} className="inline-flex rounded-full bg-stone-100 px-3 py-1 text-xs font-semibold text-stone-700">#{tag}</span>)}
+                      {post.isAnnouncement && (
+                        <span className="inline-flex rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">
+                          Announcement
+                        </span>
+                      )}
+                      {post.isPinned && (
+                        <span className="inline-flex rounded-full bg-indigo-100 px-3 py-1 text-xs font-semibold text-indigo-700">
+                          Pinned
+                        </span>
+                      )}
+                      {post.category && (
+                        <span className="inline-flex rounded-full bg-sky-100 px-3 py-1 text-xs font-semibold text-sky-700">
+                          {post.category}
+                        </span>
+                      )}
+                      {(post.tags || []).slice(0, 3).map((tag) => (
+                        <span key={tag} className="inline-flex rounded-full bg-stone-100 px-3 py-1 text-xs font-semibold text-stone-700">
+                          #{tag}
+                        </span>
+                      ))}
                     </div>
                     <p className="mt-3 whitespace-pre-wrap text-stone-800">{post.content}</p>
                     {post.image && (
                       <img
                         src={getUploadUrl(post.image)}
-                        alt={post.title || "Post attachment"}
+                        alt="Post attachment"
                         className="mt-3 max-h-80 w-full rounded-2xl object-cover"
+                        loading="lazy"
                       />
                     )}
                     <div className="mt-3 flex flex-wrap items-center gap-2">
-                      <button type="button" onClick={() => toggleLike(post._id)} className={`rounded-lg px-3 py-1 text-sm font-semibold ${isLikedPost(post) ? "bg-rose-100 text-rose-700" : "bg-stone-100 text-stone-700"}`}>{isLikedPost(post) ? "Liked" : "Like"} ({post.likes?.length || 0})</button>
-                      <button type="button" onClick={() => sharePost(post._id)} className="rounded-lg bg-sky-100 px-3 py-1 text-sm font-semibold text-sky-700">Share ({post.shares || 0})</button>
-                      <button type="button" onClick={() => reportItem("POST", post._id)} className="rounded-lg bg-orange-100 px-3 py-1 text-sm font-semibold text-orange-700">Report</button>
-                      {canModerate && <button type="button" onClick={() => togglePin(post._id)} className="rounded-lg bg-indigo-100 px-3 py-1 text-sm font-semibold text-indigo-700">{post.isPinned ? "Unpin" : "Pin"}</button>}
-                      {canDeletePost && <button type="button" onClick={() => deletePost(post._id)} className="rounded-lg bg-red-100 px-3 py-1 text-sm font-semibold text-red-700">Remove</button>}
+                      <button
+                        type="button"
+                        onClick={() => toggleLike(post._id)}
+                        className={`rounded-lg px-3 py-1 text-sm font-semibold ${
+                          isLikedPost(post) ? "bg-rose-100 text-rose-700" : "bg-stone-100 text-stone-700"
+                        }`}
+                      >
+                        {isLikedPost(post) ? "Liked" : "Like"} ({post.likes?.length || 0})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => sharePost(post._id)}
+                        className="rounded-lg bg-sky-100 px-3 py-1 text-sm font-semibold text-sky-700"
+                      >
+                        Share ({post.shares || 0})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => reportItem("POST", post._id)}
+                        className="rounded-lg bg-orange-100 px-3 py-1 text-sm font-semibold text-orange-700"
+                      >
+                        Report
+                      </button>
+                      {canModerate && (
+                        <button
+                          type="button"
+                          onClick={() => togglePin(post._id)}
+                          className="rounded-lg bg-indigo-100 px-3 py-1 text-sm font-semibold text-indigo-700"
+                        >
+                          {post.isPinned ? "Unpin" : "Pin"}
+                        </button>
+                      )}
+                      {canDeletePost && (
+                        <button
+                          type="button"
+                          onClick={() => deletePost(post._id)}
+                          className="rounded-lg bg-red-100 px-3 py-1 text-sm font-semibold text-red-700"
+                        >
+                          Remove
+                        </button>
+                      )}
                       <span className="text-sm text-stone-500">Comments: {post.comments?.length || 0}</span>
                     </div>
                     <div className="mt-3 space-y-2">
@@ -435,22 +564,45 @@ function Events() {
                           canModerate ||
                           String(comment.user?._id) === String(user?._id) ||
                           String(post.author?._id) === String(user?._id);
+
                         return (
                           <div key={comment._id} className="rounded-lg bg-white/80 px-3 py-2 text-sm">
                             <span className="font-semibold">{comment.user?.name || "Member"}:</span> {comment.text}
-                            {canDeleteComment && <button type="button" onClick={() => deleteComment(post._id, comment._id)} className="ml-3 rounded bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-700">Delete</button>}
+                            {canDeleteComment && (
+                              <button
+                                type="button"
+                                onClick={() => deleteComment(post._id, comment._id)}
+                                className="ml-3 rounded bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-700"
+                              >
+                                Delete
+                              </button>
+                            )}
                           </div>
                         );
                       })}
                     </div>
                     <div className="mt-3 flex gap-2">
-                      <input className="soft-input" value={commentDrafts[post._id] || ""} placeholder="Write a comment" onChange={(e) => setCommentDrafts((prev) => ({ ...prev, [post._id]: e.target.value }))} />
-                      <button type="button" onClick={() => addComment(post._id)} className="primary-btn">Comment</button>
+                      <input
+                        className="soft-input"
+                        value={commentDrafts[post._id] || ""}
+                        placeholder="Write a comment"
+                        onChange={(e) =>
+                          setCommentDrafts((prev) => ({ ...prev, [post._id]: e.target.value }))
+                        }
+                      />
+                      <button type="button" onClick={() => addComment(post._id)} className="primary-btn">
+                        Comment
+                      </button>
                     </div>
                   </article>
                 );
               })}
-              {viewPosts.length === 0 && <div className="rounded-2xl border border-dashed border-stone-300 bg-stone-50/80 p-8 text-center text-stone-600">No posts found.</div>}
+
+              {viewPosts.length === 0 && (
+                <div className="rounded-2xl border border-dashed border-stone-300 bg-stone-50/80 p-8 text-center text-stone-600">
+                  No posts found.
+                </div>
+              )}
             </div>
           </>
         )}
@@ -461,20 +613,59 @@ function Events() {
               <form onSubmit={createEvent} className="glass-tile mb-6 p-5">
                 <h3 className="mb-3 text-lg font-semibold">Create Event</h3>
                 <div className="grid gap-3 md:grid-cols-2">
-                  <input className="soft-input md:col-span-2" placeholder="Event title" value={eventForm.title} onChange={(e) => setEventForm((prev) => ({ ...prev, title: e.target.value }))} required />
-                  <textarea className="soft-input md:col-span-2 min-h-[96px]" placeholder="Description" value={eventForm.description} onChange={(e) => setEventForm((prev) => ({ ...prev, description: e.target.value }))} required />
-                  <input type="datetime-local" className="soft-input" value={eventForm.date} onChange={(e) => setEventForm((prev) => ({ ...prev, date: e.target.value }))} required />
-                  <input className="soft-input" placeholder="Location" value={eventForm.location} onChange={(e) => setEventForm((prev) => ({ ...prev, location: e.target.value }))} />
+                  <input
+                    className="soft-input md:col-span-2"
+                    placeholder="Event title"
+                    value={eventForm.title}
+                    onChange={(e) => setEventForm((prev) => ({ ...prev, title: e.target.value }))}
+                    required
+                  />
+                  <textarea
+                    className="soft-input md:col-span-2 min-h-[96px]"
+                    placeholder="Description"
+                    value={eventForm.description}
+                    onChange={(e) => setEventForm((prev) => ({ ...prev, description: e.target.value }))}
+                    required
+                  />
+                  <input
+                    type="datetime-local"
+                    className="soft-input"
+                    value={eventForm.date}
+                    onChange={(e) => setEventForm((prev) => ({ ...prev, date: e.target.value }))}
+                    required
+                  />
+                  <input
+                    className="soft-input"
+                    placeholder="Location"
+                    value={eventForm.location}
+                    onChange={(e) => setEventForm((prev) => ({ ...prev, location: e.target.value }))}
+                  />
                 </div>
                 {eventError && <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{eventError}</p>}
-                <button type="submit" className="primary-btn mt-4" disabled={isCreatingEvent}>{isCreatingEvent ? "Creating..." : "Create Event"}</button>
+                <button type="submit" className="primary-btn mt-4" disabled={isCreatingEvent}>
+                  {isCreatingEvent ? "Creating..." : "Create Event"}
+                </button>
               </form>
             )}
 
             <div className="mb-6 grid gap-3 md:grid-cols-12">
-              <input className="soft-input md:col-span-5" placeholder="Search events" value={search} onChange={(e) => setSearch(e.target.value)} />
-              <select className="soft-input md:col-span-3" value={filter} onChange={(e) => setFilter(e.target.value)}><option value="all">All</option><option value="upcoming">Upcoming</option><option value="past">Past</option><option value="joined">Joined by me</option></select>
-              <select className="soft-input md:col-span-4" value={sortBy} onChange={(e) => setSortBy(e.target.value)}><option value="dateAsc">Date asc</option><option value="dateDesc">Date desc</option><option value="attendeesDesc">Most attendees</option></select>
+              <input
+                className="soft-input md:col-span-5"
+                placeholder="Search events"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+              <select className="soft-input md:col-span-3" value={filter} onChange={(e) => setFilter(e.target.value)}>
+                <option value="all">All</option>
+                <option value="upcoming">Upcoming</option>
+                <option value="past">Past</option>
+                <option value="joined">Joined by me</option>
+              </select>
+              <select className="soft-input md:col-span-4" value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+                <option value="dateAsc">Date asc</option>
+                <option value="dateDesc">Date desc</option>
+                <option value="attendeesDesc">Most attendees</option>
+              </select>
             </div>
 
             <div className="grid gap-5 md:grid-cols-2">
@@ -483,21 +674,49 @@ function Events() {
                 return (
                   <article key={event._id} className="glass-tile p-6">
                     <div className="flex items-center gap-2">
-                      <span className="rounded-full bg-brand/10 px-3 py-1 text-xs font-semibold text-brand">{isUpcoming(event.date) ? "Upcoming" : "Past"}</span>
-                      {joined && <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">Joined</span>}
+                      <span className="rounded-full bg-brand/10 px-3 py-1 text-xs font-semibold text-brand">
+                        {isUpcoming(event.date) ? "Upcoming" : "Past"}
+                      </span>
+                      {joined && (
+                        <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
+                          Joined
+                        </span>
+                      )}
                     </div>
                     <h3 className="mt-3 text-xl font-semibold">{event.title}</h3>
                     <p className="mt-1 text-sm font-medium text-brand2">{new Date(event.date).toLocaleString()}</p>
                     <p className="mt-2 text-sm text-stone-600">{event.description}</p>
-                    <p className="mt-2 text-sm text-stone-500">Location: {event.location || "TBD"} | Attendees: {event.attendees?.length || 0}</p>
+                    <p className="mt-2 text-sm text-stone-500">
+                      Location: {event.location || "TBD"} | Attendees: {event.attendees?.length || 0}
+                    </p>
                     <div className="mt-4 flex items-center gap-2">
-                      <button type="button" onClick={() => joinEvent(event._id)} disabled={joined || joiningId === event._id} className={`rounded-xl px-4 py-2 text-sm font-semibold text-white ${joined ? "bg-emerald-600/80" : "bg-gradient-to-r from-brand to-brand2"}`}>{joiningId === event._id ? "Joining..." : joined ? "Joined" : "Join Event"}</button>
-                      <button type="button" onClick={() => reportItem("EVENT", event._id)} className="rounded-lg bg-orange-100 px-3 py-1 text-sm font-semibold text-orange-700">Report</button>
+                      <button
+                        type="button"
+                        onClick={() => joinEvent(event._id)}
+                        disabled={joined || joiningId === event._id}
+                        className={`rounded-xl px-4 py-2 text-sm font-semibold text-white ${
+                          joined ? "bg-emerald-600/80" : "bg-gradient-to-r from-brand to-brand2"
+                        }`}
+                      >
+                        {joiningId === event._id ? "Joining..." : joined ? "Joined" : "Join Event"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => reportItem("EVENT", event._id)}
+                        className="rounded-lg bg-orange-100 px-3 py-1 text-sm font-semibold text-orange-700"
+                      >
+                        Report
+                      </button>
                     </div>
                   </article>
                 );
               })}
-              {viewEvents.length === 0 && <div className="rounded-2xl border border-dashed border-stone-300 bg-stone-50/80 p-8 text-center text-stone-600 md:col-span-2">No events found.</div>}
+
+              {viewEvents.length === 0 && (
+                <div className="rounded-2xl border border-dashed border-stone-300 bg-stone-50/80 p-8 text-center text-stone-600 md:col-span-2">
+                  No events found.
+                </div>
+              )}
             </div>
           </>
         )}

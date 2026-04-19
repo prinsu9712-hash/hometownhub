@@ -1,18 +1,70 @@
+const mongoose = require("mongoose");
 const Community = require("../models/Community");
+const Notification = require("../models/Notification");
 
 const canModerateCommunity = (community, user) =>
   user?.role === "ADMIN" ||
   user?.role === "MODERATOR" ||
   community.createdBy.toString() === user._id.toString();
 
+const normalizeText = (value) => (typeof value === "string" ? value.trim() : "");
+
+const escapeRegex = (value) =>
+  String(value || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+const notifyUser = async (userId, message, type = "COMMUNITY") => {
+  if (!userId || !message) return;
+
+  try {
+    await Notification.create({
+      user: userId,
+      message,
+      type
+    });
+  } catch (error) {
+    // Notifications should not block main workflows.
+  }
+};
+
 exports.createCommunity = async (req, res) => {
   try {
-    const { name, city, description, rules, guidelines } = req.body;
+    const name = normalizeText(req.body.name);
+    const city = normalizeText(req.body.city);
+    const state = normalizeText(req.body.state);
+    const description = normalizeText(req.body.description);
+    const rules = normalizeText(req.body.rules);
+    const guidelines = normalizeText(req.body.guidelines);
+
+    if (!name || !city) {
+      return res.status(400).json({ message: "Community name and city are required" });
+    }
+
+    const duplicateFilter = {
+      isDeleted: false,
+      name: { $regex: `^${escapeRegex(name)}$`, $options: "i" },
+      city: { $regex: `^${escapeRegex(city)}$`, $options: "i" }
+    };
+
+    if (state) {
+      duplicateFilter.state = { $regex: `^${escapeRegex(state)}$`, $options: "i" };
+    }
+
+    const existingCommunity = await Community.findOne(duplicateFilter);
+    if (existingCommunity) {
+      return res.status(409).json({
+        message:
+          existingCommunity.status === "APPROVED"
+            ? "Community already exists for this city"
+            : "A community request for this city is already pending"
+      });
+    }
+
     const isAdmin = req.user.role === "ADMIN";
 
     const community = await Community.create({
       name,
       city,
+      state,
       description,
       rules,
       guidelines,
@@ -21,6 +73,14 @@ exports.createCommunity = async (req, res) => {
       status: isAdmin ? "APPROVED" : "PENDING",
       approvedBy: isAdmin ? req.user._id : undefined
     });
+
+    if (!isAdmin) {
+      await notifyUser(
+        req.user._id,
+        `Your community request "${name}" for ${city} has been submitted for approval.`,
+        "SYSTEM"
+      );
+    }
 
     res.status(201).json({
       message: isAdmin
@@ -35,15 +95,24 @@ exports.createCommunity = async (req, res) => {
 
 exports.getAllCommunities = async (req, res) => {
   try {
-    const { search, city } = req.query;
+    const { search, city, state } = req.query;
     const filter = { isDeleted: false, status: "APPROVED" };
 
     if (search) {
-      filter.name = { $regex: search, $options: "i" };
+      filter.$or = [
+        { name: { $regex: search, $options: "i" } },
+        { city: { $regex: search, $options: "i" } },
+        { state: { $regex: search, $options: "i" } },
+        { description: { $regex: search, $options: "i" } }
+      ];
     }
 
     if (city) {
-      filter.city = city;
+      filter.city = { $regex: `^${escapeRegex(city)}$`, $options: "i" };
+    }
+
+    if (state) {
+      filter.state = { $regex: `^${escapeRegex(state)}$`, $options: "i" };
     }
 
     const communities = await Community.find(filter)
@@ -53,6 +122,33 @@ exports.getAllCommunities = async (req, res) => {
       .sort({ createdAt: -1 });
 
     res.json(communities);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.getCommunityById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(404).json({ message: "Community not found" });
+    }
+
+    const community = await Community.findOne({
+      _id: id,
+      isDeleted: false,
+      status: "APPROVED"
+    })
+      .populate("createdBy", "name email role")
+      .populate("members", "name email role")
+      .populate("pendingMembers", "name email");
+
+    if (!community) {
+      return res.status(404).json({ message: "Community not found" });
+    }
+
+    res.json(community);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -86,6 +182,20 @@ exports.joinCommunity = async (req, res) => {
 
     community.pendingMembers.push(req.user._id);
     await community.save();
+
+    await notifyUser(
+      req.user._id,
+      `Your request to join ${community.name} is pending moderator approval.`,
+      "COMMUNITY"
+    );
+
+    if (community.createdBy.toString() !== req.user._id.toString()) {
+      await notifyUser(
+        community.createdBy,
+        `${req.user.name || "A user"} requested to join ${community.name}.`,
+        "COMMUNITY"
+      );
+    }
 
     res.status(202).json({ status: "pending", message: "Join request submitted for approval" });
   } catch (error) {
@@ -157,6 +267,7 @@ exports.approveRequest = async (req, res) => {
     }
 
     await community.save();
+    await notifyUser(userId, `Your join request for ${community.name} was approved.`, "COMMUNITY");
     res.json({ message: "Member approved" });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -178,6 +289,7 @@ exports.rejectRequest = async (req, res) => {
     community.pendingMembers = community.pendingMembers.filter((id) => id.toString() !== userId);
     await community.save();
 
+    await notifyUser(userId, `Your join request for ${community.name} was rejected.`, "COMMUNITY");
     res.json({ message: "Join request rejected" });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -255,11 +367,22 @@ exports.updateCommunityRequestStatus = async (req, res) => {
     community.approvalNote = approvalNote || "";
     community.approvedBy = req.user._id;
 
-    if (status === "APPROVED" && !community.members.some((id) => id.toString() === community.createdBy.toString())) {
+    if (
+      status === "APPROVED" &&
+      !community.members.some((id) => id.toString() === community.createdBy.toString())
+    ) {
       community.members.push(community.createdBy);
     }
 
     await community.save();
+
+    await notifyUser(
+      community.createdBy,
+      status === "APPROVED"
+        ? `Your community \"${community.name}\" request has been approved.`
+        : `Your community \"${community.name}\" request was rejected.`,
+      "SYSTEM"
+    );
 
     res.json({
       message: status === "APPROVED" ? "Community request approved" : "Community request rejected",

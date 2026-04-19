@@ -289,6 +289,8 @@ const getPostCategory = (post) => {
   };
 };
 
+const isObjectId = (value) => /^[a-f\d]{24}$/i.test(String(value || ""));
+
 const buildActiveMembers = (posts, communities) => {
   const authorItems = posts
     .map((post) => post?.author)
@@ -616,7 +618,7 @@ function Home() {
                   </div>
                   <Link
                     className="landing-mini-button"
-                    to={user ? `/events/${community._id}` : "/register"}
+                    to={user ? (isObjectId(community._id) ? `/events/${community._id}` : "/communities") : "/register"}
                   >
                     {user ? "Open" : "Join"}
                   </Link>

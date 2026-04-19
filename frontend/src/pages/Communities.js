@@ -5,125 +5,6 @@ import Layout from "../components/Layout";
 import API, { getApiErrorMessage } from "../api";
 import { AuthContext } from "../context/AuthContext";
 
-const fallbackCommunities = [
-  {
-    _id: "fallback-delhi-pulse",
-    name: "Delhi Pulse",
-    city: "New Delhi, Delhi",
-    description:
-      "Heritage volunteers, civic circles, and metro commuters sharing urgent notices and festive guides.",
-    memberCount: 9820,
-    pendingCount: 62,
-    members: [],
-    pendingMembers: []
-  },
-  {
-    _id: "fallback-mumbai-local-network",
-    name: "Mumbai Local Network",
-    city: "Mumbai, Maharashtra",
-    description:
-      "Coastal neighborhoods and textile hubs coordinating cleanups, rail updates, and weekend plans.",
-    memberCount: 10540,
-    pendingCount: 49,
-    members: [],
-    pendingMembers: []
-  },
-  {
-    _id: "fallback-bengaluru-hive",
-    name: "Bengaluru Hive",
-    city: "Bengaluru, Karnataka",
-    description:
-      "Tech parks and residential blocks keeping each other informed about launch parties, traffic, and shared rides.",
-    memberCount: 8200,
-    pendingCount: 36,
-    members: [],
-    pendingMembers: []
-  },
-  {
-    _id: "fallback-chennai-shoreline",
-    name: "Chennai Shoreline Collective",
-    city: "Chennai, Tamil Nadu",
-    description:
-      "Coastal civic groups reporting festival prep, monsoon safety, and volunteer drives along the Marina.",
-    memberCount: 6200,
-    pendingCount: 28,
-    members: [],
-    pendingMembers: []
-  },
-  {
-    _id: "fallback-kolkata-connect",
-    name: "Kolkata Connect",
-    city: "Kolkata, West Bengal",
-    description:
-      "Culture, food, and neighborhood discussions woven together with civic updates and creative polls.",
-    memberCount: 5400,
-    pendingCount: 19,
-    members: [],
-    pendingMembers: []
-  },
-  {
-    _id: "fallback-gujarat-waypoints",
-    name: "Gujarat Waypoints",
-    city: "Ahmedabad, Gujarat",
-    description:
-      "Sabarmati neighborhoods, industrial corridors, and cultural hubs sharing civic announcements and festival logistics.",
-    memberCount: 7600,
-    pendingCount: 41,
-    members: [],
-    pendingMembers: []
-  },
-  {
-    _id: "fallback-surat-circle",
-    name: "Surat Circle",
-    city: "Surat, Gujarat",
-    description:
-      "Textile families and food vendors syncing on production runs, events, and neighborhood safety checks.",
-    memberCount: 4300,
-    pendingCount: 14,
-    members: [],
-    pendingMembers: []
-  },
-  {
-    _id: "fallback-vadodara-connect",
-    name: "Vadodara Connect",
-    city: "Vadodara, Gujarat",
-    description:
-      "City planners, schools, and residents coordinating heritage walks, alerts, and community meals.",
-    memberCount: 4218,
-    pendingCount: 12,
-    members: [],
-    pendingMembers: []
-  },
-  {
-    _id: "fallback-rajkot-resonance",
-    name: "Rajkot Resonance",
-    city: "Rajkot, Gujarat",
-    description:
-      "Craft and maker neighborhoods sharing logistics, artisan markets, and safety updates.",
-    memberCount: 1980,
-    pendingCount: 9,
-    members: [],
-    pendingMembers: []
-  },
-  {
-    _id: "fallback-bhuj-connect",
-    name: "Bhuj Connect",
-    city: "Bhuj, Gujarat",
-    description:
-      "Kutch communities collaborating on climate resilience, arts festivals, and travel tips.",
-    memberCount: 1120,
-    pendingCount: 6,
-    members: [],
-    pendingMembers: []
-  }
-];
-
-const getFallbackMemberCount = (community) =>
-  community?.members?.length ?? community?.memberCount ?? 0;
-
-const getFallbackPendingCount = (community) =>
-  community?.pendingMembers?.length ?? community?.pendingCount ?? 0;
-
 const INDIAN_STATES = [
   { name: "Andhra Pradesh", cities: ["Visakhapatnam", "Vijayawada", "Tirupati"] },
   { name: "Arunachal Pradesh", cities: ["Itanagar", "Naharlagun", "Ziro"] },
@@ -155,10 +36,35 @@ const INDIAN_STATES = [
   { name: "West Bengal", cities: ["Kolkata", "Siliguri", "Durgapur"] }
 ];
 
+const getCommunityState = (community) => {
+  const state = String(community?.state || "").trim();
+  if (state) return state;
+
+  const parts = String(community?.city || "")
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+  return parts.length > 1 ? parts[parts.length - 1] : "";
+};
+
+const getCommunityCity = (community) => {
+  const parts = String(community?.city || "")
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+  return parts.length > 0 ? parts[0] : "";
+};
+
+const getMemberCount = (community) => community?.members?.length || 0;
+const getPendingCount = (community) => community?.pendingMembers?.length || 0;
+
 function Communities() {
   const { user } = useContext(AuthContext);
-  const [communities, setCommunities] = useState(fallbackCommunities);
+  const [communities, setCommunities] = useState([]);
   const [pageError, setPageError] = useState("");
+  const [statusMessage, setStatusMessage] = useState("");
   const [search, setSearch] = useState("");
   const [stateFilter, setStateFilter] = useState("All");
   const [cityFilter, setCityFilter] = useState("All");
@@ -169,6 +75,7 @@ function Communities() {
   const [createError, setCreateError] = useState("");
   const [form, setForm] = useState({
     name: "",
+    state: "",
     city: "",
     description: ""
   });
@@ -179,16 +86,9 @@ function Communities() {
     try {
       setPageError("");
       const { data } = await API.get("/communities");
-      if (Array.isArray(data) && data.length > 0) {
-        setCommunities(data);
-      } else {
-        setCommunities(fallbackCommunities);
-        if (!Array.isArray(data) || data.length === 0) {
-          setPageError("No live communities found yet; showing curated fallbacks.");
-        }
-      }
+      setCommunities(Array.isArray(data) ? data : []);
     } catch (error) {
-      setCommunities(fallbackCommunities);
+      setCommunities([]);
       setPageError(getApiErrorMessage(error, "Failed to load communities."));
     }
   }, []);
@@ -200,11 +100,18 @@ function Communities() {
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
     if (!query) return communities;
+
     return communities.filter((community) => {
       const name = (community.name || "").toLowerCase();
       const city = (community.city || "").toLowerCase();
+      const state = getCommunityState(community).toLowerCase();
       const description = (community.description || "").toLowerCase();
-      return name.includes(query) || city.includes(query) || description.includes(query);
+      return (
+        name.includes(query) ||
+        city.includes(query) ||
+        state.includes(query) ||
+        description.includes(query)
+      );
     });
   }, [communities, search]);
 
@@ -213,18 +120,44 @@ function Communities() {
     return INDIAN_STATES.find((state) => state.name === stateFilter) || null;
   }, [stateFilter]);
 
-  const cityOptions = selectedState?.cities || [];
+  const derivedCitiesForState = useMemo(() => {
+    if (!selectedState) return [];
+
+    const known = selectedState.cities;
+    const dynamic = communities
+      .filter((community) => getCommunityState(community) === selectedState.name)
+      .map(getCommunityCity)
+      .filter(Boolean);
+
+    return Array.from(new Set([...known, ...dynamic]));
+  }, [communities, selectedState]);
+
+  const formCitySuggestions = useMemo(() => {
+    if (!form.state) return [];
+    const match = INDIAN_STATES.find((state) => state.name === form.state);
+    return match?.cities || [];
+  }, [form.state]);
 
   const stateFilteredCommunities = useMemo(() => {
     let results = filtered;
+
     if (stateFilter !== "All") {
-      results = results.filter((community) =>
-        community.state?.includes(stateFilter) || community.city?.includes(stateFilter)
-      );
+      const normalizedState = stateFilter.toLowerCase();
+      results = results.filter((community) => {
+        const state = getCommunityState(community).toLowerCase();
+        const city = (community.city || "").toLowerCase();
+        return state === normalizedState || city.includes(normalizedState);
+      });
     }
+
     if (cityFilter !== "All") {
-      results = results.filter((community) => community.city?.includes(cityFilter));
+      const normalizedCity = cityFilter.toLowerCase();
+      results = results.filter((community) => {
+        const city = getCommunityCity(community).toLowerCase();
+        return city === normalizedCity || (community.city || "").toLowerCase().includes(normalizedCity);
+      });
     }
+
     return results;
   }, [filtered, stateFilter, cityFilter]);
 
@@ -259,27 +192,41 @@ function Communities() {
   );
 
   const handleCreateChange = (e) => {
-    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
     setCreateError("");
+    setStatusMessage("");
   };
 
   const createCommunity = async (e) => {
     e.preventDefault();
     setIsCreating(true);
     setCreateError("");
+    setStatusMessage("");
+
     try {
-      await API.post("/communities", form);
-      setForm({ name: "", city: "", description: "" });
-      setCreateError(user?.role === "ADMIN"
-        ? "Community created successfully."
-        : "Community request submitted for admin approval.");
+      if (!form.name.trim() || !form.state.trim() || !form.city.trim()) {
+        setCreateError("Community name, state and city are required.");
+        setIsCreating(false);
+        return;
+      }
+
+      await API.post("/communities", {
+        name: form.name.trim(),
+        state: form.state.trim(),
+        city: form.city.trim(),
+        description: form.description.trim()
+      });
+
+      setForm({ name: "", state: "", city: "", description: "" });
+      setStatusMessage(
+        user?.role === "ADMIN"
+          ? "Community created successfully."
+          : "Community request submitted for admin approval."
+      );
       await fetchCommunities();
     } catch (error) {
-      setCreateError(
-        error?.response?.data?.message ||
-          error?.response?.data?.error ||
-          "Failed to create community"
-      );
+      setCreateError(getApiErrorMessage(error, "Failed to create community."));
     } finally {
       setIsCreating(false);
     }
@@ -287,19 +234,22 @@ function Communities() {
 
   const toggleMembership = async (community) => {
     if (!user?._id) return;
+
     const joined = isMember(community);
     setMembershipLoadingId(community._id);
     setMembershipMessage((prev) => ({ ...prev, [community._id]: "" }));
+
     try {
       const { data } = await API.post(`/communities/${community._id}/${joined ? "leave" : "join"}`);
-      if (data?.status === "pending") {
-        setMembershipMessage((prev) => ({ ...prev, [community._id]: "Request pending approval" }));
-      }
+      setMembershipMessage((prev) => ({
+        ...prev,
+        [community._id]: data?.message || (joined ? "You left the community." : "Membership updated.")
+      }));
       await fetchCommunities();
     } catch (error) {
       setMembershipMessage((prev) => ({
         ...prev,
-        [community._id]: error?.response?.data?.message || "Membership update failed"
+        [community._id]: getApiErrorMessage(error, "Membership update failed")
       }));
     } finally {
       setMembershipLoadingId("");
@@ -308,22 +258,24 @@ function Communities() {
 
   const updatePolicy = async (communityId) => {
     const draft = policyDrafts[communityId] || {};
+
     try {
       setPageError("");
       await API.put(`/communities/${communityId}/policy`, {
         rules: draft.rules || "",
         guidelines: draft.guidelines || ""
       });
+      setStatusMessage("Community policy updated.");
       await fetchCommunities();
     } catch (error) {
       setPageError(getApiErrorMessage(error, "Failed to update community rules."));
     }
   };
 
-  const handleRequestAction = async (communityId, userId, action) => {
+  const handleRequestAction = async (communityId, requestUserId, action) => {
     try {
       setPageError("");
-      await API.post(`/communities/${communityId}/requests/${userId}/${action}`);
+      await API.post(`/communities/${communityId}/requests/${requestUserId}/${action}`);
       await fetchCommunities();
     } catch (error) {
       setPageError(getApiErrorMessage(error, "Failed to update the membership request."));
@@ -349,6 +301,12 @@ function Communities() {
           </div>
         )}
 
+        {statusMessage && (
+          <div className="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
+            {statusMessage}
+          </div>
+        )}
+
         <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="section-kicker">Explore</p>
@@ -367,33 +325,35 @@ function Communities() {
             </span>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
-            {(stateFilter === "All" ? INDIAN_STATES : selectedState ? [selectedState] : []).map(
-              (state) => (
+            {(stateFilter === "All" ? INDIAN_STATES : selectedState ? [selectedState] : []).map((state) => {
+              const count = communities.filter(
+                (community) => getCommunityState(community).toLowerCase() === state.name.toLowerCase()
+              ).length;
+
+              return (
                 <article key={state.name} className="rounded-2xl border border-stone-200 p-4">
                   <h3 className="font-semibold text-stone-900">{state.name}</h3>
-                  <p className="text-sm text-stone-500">
-                    {state.cities.join(", ")} and nearby towns
-                  </p>
+                  <p className="text-sm text-stone-500">{state.cities.join(", ")} and nearby towns</p>
                   <p className="mt-2 text-xs font-semibold uppercase text-stone-500">
-                    {communities.filter(
-                      (community) =>
-                        community.state === state.name ||
-                        community.city?.includes(state.name) ||
-                        state.cities.some((city) => community.city?.includes(city))
-                    ).length || "Create new"} communities
+                    {count || "Create new"} communities
                   </p>
                   <button
                     type="button"
                     className="primary-btn mt-4"
-                    onClick={() =>
-                      formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
-                    }
+                    onClick={() => {
+                      setForm((prev) => ({
+                        ...prev,
+                        state: state.name,
+                        city: prev.city || state.cities[0] || ""
+                      }));
+                      formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+                    }}
                   >
                     Create community for {state.name}
                   </button>
                 </article>
-              )
-            )}
+              );
+            })}
           </div>
         </div>
 
@@ -420,7 +380,7 @@ function Communities() {
             onChange={(e) => setCityFilter(e.target.value)}
           >
             <option value="All">All Cities</option>
-            {cityOptions.map((city) => (
+            {derivedCitiesForState.map((city) => (
               <option key={city} value={city}>
                 {city}
               </option>
@@ -437,9 +397,10 @@ function Communities() {
             Reset filters
           </button>
         </div>
+
         <input
           className="soft-input mb-7"
-          placeholder="Search by community, city, or description"
+          placeholder="Search by community, city, state, or description"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
@@ -467,14 +428,37 @@ function Communities() {
                 placeholder="Community name"
                 required
               />
+              <select
+                name="state"
+                value={form.state}
+                onChange={(e) => {
+                  handleCreateChange(e);
+                  setForm((prev) => ({ ...prev, city: "" }));
+                }}
+                className="soft-input"
+                required
+              >
+                <option value="">Select state</option>
+                {INDIAN_STATES.map((state) => (
+                  <option key={state.name} value={state.name}>
+                    {state.name}
+                  </option>
+                ))}
+              </select>
               <input
                 name="city"
                 value={form.city}
                 onChange={handleCreateChange}
                 className="soft-input"
-                placeholder="City"
+                placeholder="City or village"
+                list="community-city-options"
                 required
               />
+              <datalist id="community-city-options">
+                {formCitySuggestions.map((city) => (
+                  <option key={city} value={city} />
+                ))}
+              </datalist>
               <textarea
                 name="description"
                 value={form.description}
@@ -483,31 +467,33 @@ function Communities() {
                 placeholder="Community description"
               />
             </div>
+
             {createError && (
-              <p className={`mt-3 rounded-lg px-3 py-2 text-sm font-medium ${
-                createError.toLowerCase().includes("successfully") || createError.toLowerCase().includes("submitted")
-                  ? "bg-emerald-50 text-emerald-700"
-                  : "bg-red-50 text-red-700"
-              }`}>
+              <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm font-medium text-red-700">
                 {createError}
               </p>
             )}
+
             <button type="submit" disabled={isCreating} className="primary-btn mt-4">
               {isCreating
-                ? (user?.role === "ADMIN" ? "Creating..." : "Submitting...")
-                : (user?.role === "ADMIN" ? "Create Community" : "Submit Request")}
+                ? user?.role === "ADMIN"
+                  ? "Creating..."
+                  : "Submitting..."
+                : user?.role === "ADMIN"
+                  ? "Create Community"
+                  : "Submit Request"}
             </button>
           </form>
         )}
 
         {stateFilteredCommunities.length === 0 && (
           <div className="rounded-2xl border border-dashed border-stone-300 bg-stone-50/80 p-8 text-center text-stone-600">
-            No communities available yet.
+            No approved communities available for this filter yet.
           </div>
         )}
 
-      <div className="grid gap-5 md:grid-cols-2">
-        {stateFilteredCommunities.map((community, idx) => (
+        <div className="grid gap-5 md:grid-cols-2">
+          {stateFilteredCommunities.map((community, idx) => (
             <motion.div
               key={community._id}
               initial={{ opacity: 0, y: 14 }}
@@ -516,23 +502,28 @@ function Communities() {
               className="glass-tile p-6 transition hover:-translate-y-1 hover:shadow-lg"
             >
               <h3 className="text-xl font-semibold text-stone-900">{community.name}</h3>
-              <p className="mt-1 text-sm font-medium text-brand">{community.city}</p>
-              <p className="mt-3 text-sm text-stone-600">{community.description}</p>
-                <p className="mt-3 text-xs font-semibold uppercase tracking-[0.14em] text-stone-500">
-                  Members: {getFallbackMemberCount(community)}
-                </p>
-                <p className="mt-1 text-xs font-semibold uppercase tracking-[0.14em] text-stone-500">
-                  Pending Requests: {getFallbackPendingCount(community)}
-                </p>
+              <p className="mt-1 text-sm font-medium text-brand">
+                {getCommunityCity(community)}{getCommunityState(community) ? `, ${getCommunityState(community)}` : ""}
+              </p>
+              <p className="mt-3 text-sm text-stone-600">{community.description || "No description yet."}</p>
+              <p className="mt-3 text-xs font-semibold uppercase tracking-[0.14em] text-stone-500">
+                Members: {getMemberCount(community)}
+              </p>
+              <p className="mt-1 text-xs font-semibold uppercase tracking-[0.14em] text-stone-500">
+                Pending Requests: {getPendingCount(community)}
+              </p>
+
               {membershipMessage[community._id] && (
                 <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700">
                   {membershipMessage[community._id]}
                 </p>
               )}
+
               <div className="mt-5 flex flex-wrap gap-2">
                 <button
                   onClick={() => navigate(`/events/${community._id}`)}
                   className="primary-btn"
+                  type="button"
                 >
                   Open Community Hub
                 </button>
@@ -560,7 +551,7 @@ function Communities() {
 
               {canModerateCommunity(community) && (
                 <div className="mt-5 rounded-xl border border-stone-200 bg-white/75 p-4">
-                  <p className="text-sm font-semibold text-stone-800">Community Rules & Guidelines</p>
+                  <p className="text-sm font-semibold text-stone-800">Community Rules and Guidelines</p>
                   <div className="mt-3 grid gap-2">
                     <textarea
                       className="soft-input min-h-[72px]"

@@ -10,6 +10,11 @@ const communitySchema = new mongoose.Schema(
       type: String,
       required: true
     },
+    state: {
+      type: String,
+      default: "",
+      trim: true
+    },
     description: String,
     rules: {
       type: String,

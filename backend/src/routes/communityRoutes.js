@@ -6,6 +6,7 @@ const { protect, authorize } = require("../middleware/authMiddleware");
 const {
   createCommunity,
   getAllCommunities,
+  getCommunityById,
   joinCommunity,
   leaveCommunity,
   getCommunityRequests,
@@ -21,6 +22,7 @@ router.post("/", protect, createCommunity);
 router.get("/", getAllCommunities);
 router.get("/requests/all", protect, authorize("ADMIN"), getCommunityRequests);
 router.put("/requests/:id/status", protect, authorize("ADMIN"), updateCommunityRequestStatus);
+router.get("/:id", getCommunityById);
 router.post("/:id/join", protect, joinCommunity);
 router.post("/:id/leave", protect, leaveCommunity);
 router.get("/:id/requests", protect, getPendingRequests);

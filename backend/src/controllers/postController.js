@@ -6,6 +6,12 @@ const mongoose = require("mongoose");
 const canModeratePost = (user, postAuthorId) =>
   user?.role === "ADMIN" || user?.role === "MODERATOR" || postAuthorId.toString() === user._id.toString();
 
+const parseBoolean = (value) =>
+  value === true ||
+  value === "true" ||
+  value === 1 ||
+  value === "1";
+
 exports.createPost = async (req, res) => {
   try {
     const { community, content, isAnnouncement, category, tags } = req.body;
@@ -15,7 +21,7 @@ exports.createPost = async (req, res) => {
     }
 
     const communityData = await Community.findById(community);
-    if (!communityData || communityData.isDeleted) {
+    if (!communityData || communityData.isDeleted || communityData.status !== "APPROVED") {
       return res.status(404).json({ message: "Community not found" });
     }
 
@@ -23,7 +29,7 @@ exports.createPost = async (req, res) => {
       community,
       author: req.user._id,
       content: content.trim(),
-      isAnnouncement: Boolean(isAnnouncement),
+      isAnnouncement: parseBoolean(isAnnouncement),
       category: typeof category === "string" ? category.trim() : "",
       tags: Array.isArray(tags)
         ? tags.map((tag) => String(tag).trim()).filter(Boolean)
