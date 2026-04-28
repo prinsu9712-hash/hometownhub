@@ -16,11 +16,7 @@ function Navbar() {
   }, [location.pathname]);
 
   const userLinkStyle = ({ isActive }) =>
-    `rounded-full px-4 py-2 text-sm font-semibold transition ${
-      isActive
-        ? "bg-white text-[#2c1810] shadow-sm"
-        : "text-[#f5e7d3]/82 hover:bg-white/12 hover:text-white"
-    }`;
+    `nav-pill ${isActive ? "nav-pill-active" : ""}`;
 
   const publicTextLinkClass =
     "rounded-full px-3 py-2 text-sm font-semibold text-[#2c1810]/72 transition hover:text-[#c4622d]";
@@ -64,7 +60,7 @@ function Navbar() {
     <nav
       className={`fixed inset-x-0 top-0 z-50 border-b backdrop-blur-xl ${
         user
-          ? "border-white/10 bg-[#2c1810]/88"
+          ? "border-[#c4622d]/14 bg-[#faf3e8]/90"
           : isHomePage
             ? "border-[#c4622d]/14 bg-[#faf3e8]/88"
             : "border-[#c4622d]/12 bg-[#fffaf5]/94"
@@ -80,7 +76,7 @@ function Navbar() {
             <span
               className={`flex h-10 w-10 items-center justify-center rounded-2xl text-sm font-extrabold tracking-[0.18em] ${
                 user
-                  ? "bg-gradient-to-br from-[#c4622d] to-[#ff7a35] text-white"
+                  ? "bg-gradient-to-br from-[#c4622d] to-[#854f0b] text-white"
                   : "bg-gradient-to-br from-[#c4622d]/15 to-[#e8a838]/20 text-[#c4622d]"
               }`}
             >
@@ -88,7 +84,7 @@ function Navbar() {
             </span>
             <span
               className={`font-['Playfair_Display'] text-xl font-black tracking-tight ${
-                user ? "text-[#faf3e8]" : "text-[#c4622d]"
+                user ? "text-[#2c1810]" : "text-[#c4622d]"
               }`}
               style={{ fontFamily: '"Playfair Display", "Outfit", serif' }}
             >
@@ -99,7 +95,7 @@ function Navbar() {
           {user ? (
             <>
               <div className="hidden items-center justify-end gap-2 md:flex">
-                <span className="rounded-full bg-white/10 px-3 py-2 text-xs font-semibold text-[#f5e7d3]">
+                <span className="rounded-full bg-[#fffdf9] px-3 py-2 text-xs font-semibold text-[#7a6040] shadow-sm">
                   {user.name}
                 </span>
                 {userLinks.map((item) => (
@@ -108,7 +104,7 @@ function Navbar() {
                   </NavLink>
                 ))}
                 <button
-                  className="rounded-full border border-white/16 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/16"
+                  className="rounded-full border border-[#c4622d]/22 bg-[#fffdf9] px-4 py-2 text-sm font-semibold text-[#854f0b] transition hover:bg-[#faeeda]"
                   onClick={handleLogout}
                   type="button"
                 >
@@ -119,7 +115,7 @@ function Navbar() {
               <button
                 type="button"
                 onClick={() => setIsMobileMenuOpen((prev) => !prev)}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/20 text-white md:hidden"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[#c4622d]/25 text-[#2c1810] md:hidden"
                 aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
               >
                 {isMobileMenuOpen ? "Close" : "Menu"}
@@ -177,13 +173,13 @@ function Navbar() {
           <div
             className={`mt-3 rounded-2xl border p-3 shadow-lg md:hidden ${
               user
-                ? "border-white/10 bg-[#2f1c13]/95"
+                ? "border-[#c4622d]/20 bg-white/95"
                 : "border-[#c4622d]/20 bg-white/95"
             }`}
           >
             {user ? (
               <div className="space-y-2">
-                <p className="rounded-xl bg-white/10 px-3 py-2 text-sm font-semibold text-[#f5e7d3]">
+                <p className="rounded-xl bg-[#fffaf3] px-3 py-2 text-sm font-semibold text-[#7a6040]">
                   {user.name}
                 </p>
                 {userLinks.map((item) => (
@@ -197,7 +193,7 @@ function Navbar() {
                   </NavLink>
                 ))}
                 <button
-                  className="mt-1 w-full rounded-full border border-white/16 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/16"
+                  className="mt-1 w-full rounded-full border border-[#c4622d]/22 bg-[#fffdf9] px-4 py-2 text-sm font-semibold text-[#854f0b] transition hover:bg-[#faeeda]"
                   onClick={handleLogout}
                   type="button"
                 >

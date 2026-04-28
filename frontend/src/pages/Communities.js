@@ -4,12 +4,12 @@ import { motion } from "framer-motion";
 import Layout from "../components/Layout";
 import API, { getApiErrorMessage } from "../api";
 import { AuthContext } from "../context/AuthContext";
+import HeroBanner from "../components/HeroBanner";
 import {
   ArrowUpRightIcon,
   CheckCircleIcon,
   ClipboardIcon,
   CommunityIcon,
-  CompassIcon,
   FilterIcon,
   GlobeIcon,
   MailIcon,
@@ -325,66 +325,37 @@ function Communities() {
   return (
     <Layout>
       <section className="aurora-shell p-8 sm:p-10">
-        <div className="hero-banner mb-6">
-          <div className="hero-content grid gap-8 lg:grid-cols-[minmax(0,1.4fr)_minmax(300px,0.95fr)] lg:items-center">
-            <div>
-              <div className="mb-4 flex flex-wrap gap-2">
-                <span className="hero-chip">
-                  <CommunityIcon className="h-4 w-4" />
-                  Local Network
-                </span>
-                <span className="hero-chip">
-                  <CompassIcon className="h-4 w-4" />
-                  City and village discovery
-                </span>
-              </div>
-              <h2 className="text-3xl font-bold sm:text-5xl">Explore hometown communities with a richer, more active social layer</h2>
-              <p className="mt-3 max-w-3xl text-sm text-white/90 sm:text-base">
-                Join the right community, request access, moderate member flow, and launch new city or village spaces from one animated hub.
-              </p>
-              <div className="mt-5 flex flex-wrap gap-3">
-                <span className="hero-chip">
-                  <ShieldIcon className="h-4 w-4" />
-                  Rules and moderation
-                </span>
-                <span className="hero-chip">
-                  <PulseIcon className="h-4 w-4" />
-                  Pending approvals
-                </span>
-                <span className="hero-chip">
-                  <SparkIcon className="h-4 w-4" />
-                  Community creation
-                </span>
-              </div>
-            </div>
+        <HeroBanner
+          tag="Local Network"
+          title="Discover Hometown Communities"
+          sub="Join your city or village community, share updates, and participate in events across India."
+          chips={["City and village discovery", "Rules and moderation", "Pending approvals"]}
+        />
 
-            <div className="grid gap-3 sm:grid-cols-2">
-              {dashboardStats.map((item, idx) => {
-                const Icon = item.icon;
-                return (
-                  <motion.div
-                    key={item.label}
-                    initial={{ opacity: 0, y: 14 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.4, delay: idx * 0.05 }}
-                    className="hero-stat"
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className="icon-badge h-10 w-10 rounded-xl">
-                        <Icon className="h-5 w-5" />
-                      </span>
-                      <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/72">
-                          {item.label}
-                        </p>
-                        <p className="mt-1 text-xl font-bold text-white">{item.value}</p>
-                      </div>
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </div>
-          </div>
+        <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {dashboardStats.map((item, idx) => {
+            const Icon = item.icon;
+            return (
+              <motion.div
+                key={item.label}
+                initial={{ opacity: 0, y: 14 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.35, delay: idx * 0.05 }}
+                className="stat-card"
+              >
+                <div className="mb-3 flex items-center justify-between">
+                  <p className="text-xs font-semibold uppercase tracking-[0.08em] text-stone-500">
+                    {item.label}
+                  </p>
+                  <Icon className="h-5 w-5 text-brand" />
+                </div>
+                <p className="text-3xl font-bold text-stone-900">{item.value}</p>
+                <div className="progress-bar mt-3">
+                  <div className="progress-fill" style={{ width: `${Math.min(100, Math.max(6, Number(item.value) * 8))}%` }} />
+                </div>
+              </motion.div>
+            );
+          })}
         </div>
 
         {pageError && (

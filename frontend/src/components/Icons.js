@@ -20,6 +20,12 @@ export const ArrowUpRightIcon = ({ className }) => (
   </SvgIcon>
 );
 
+export const ActivityIcon = ({ className }) => (
+  <SvgIcon className={className}>
+    <path d="M3 12h4l2-4 4 8 2-4h6" />
+  </SvgIcon>
+);
+
 export const BellIcon = ({ className }) => (
   <SvgIcon className={className}>
     <path d="M15 17H9a4 4 0 0 1-4-4v-2a7 7 0 0 1 14 0v2a4 4 0 0 1-4 4Z" />
@@ -107,6 +113,14 @@ export const GlobeIcon = ({ className }) => (
   </SvgIcon>
 );
 
+export const HomeIcon = ({ className }) => (
+  <SvgIcon className={className}>
+    <path d="m3 11 9-7 9 7" />
+    <path d="M5 10v10h14V10" />
+    <path d="M10 20v-5h4v5" />
+  </SvgIcon>
+);
+
 export const LayersIcon = ({ className }) => (
   <SvgIcon className={className}>
     <path d="m12 4 8 4-8 4-8-4 8-4Z" />
@@ -140,6 +154,15 @@ export const MegaphoneIcon = ({ className }) => (
 export const PulseIcon = ({ className }) => (
   <SvgIcon className={className}>
     <path d="M3 12h4l2-4 4 8 2-4h6" />
+  </SvgIcon>
+);
+
+export const RadioIcon = ({ className }) => (
+  <SvgIcon className={className}>
+    <circle cx="12" cy="12" r="2.5" />
+    <path d="M8.4 8.4a5 5 0 0 1 7.2 0" />
+    <path d="M6.1 6.1a8.3 8.3 0 0 1 11.8 0" />
+    <path d="M15.6 15.6a5 5 0 0 1-7.2 0" />
   </SvgIcon>
 );
 

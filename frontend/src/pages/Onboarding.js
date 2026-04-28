@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import Layout from "../components/Layout";
 import API, { getApiErrorMessage } from "../api";
+import HeroBanner from "../components/HeroBanner";
 import {
   CheckCircleIcon,
   ClipboardIcon,
@@ -98,64 +99,35 @@ function Onboarding() {
   return (
     <Layout>
       <section className="aurora-shell p-8 sm:p-10">
-        <div className="hero-banner mb-6">
-          <div className="hero-content grid gap-8 lg:grid-cols-[minmax(0,1.4fr)_minmax(280px,0.9fr)] lg:items-center">
-            <div>
-              <div className="mb-4 flex flex-wrap gap-2">
-                <span className="hero-chip">
-                  <ClipboardIcon className="h-4 w-4" />
-                  Onboarding
-                </span>
-                <span className="hero-chip">
-                  <SparkIcon className="h-4 w-4" />
-                  Review-ready flow
-                </span>
-              </div>
-              <h2 className="text-3xl font-bold sm:text-5xl">Community and pandit onboarding with a clearer, guided flow</h2>
-              <p className="mt-3 max-w-3xl text-sm text-white/90 sm:text-base">
-                Submit local community details, route requests for approval, and keep status updates visible in one polished workflow.
-              </p>
-              <div className="mt-5 flex flex-wrap gap-3">
-                <span className="hero-chip">
-                  <CommunityIcon className="h-4 w-4" />
-                  Community requests
-                </span>
-                <span className="hero-chip">
-                  <UserIcon className="h-4 w-4" />
-                  Contact validation
-                </span>
-                <span className="hero-chip">
-                  <CheckCircleIcon className="h-4 w-4" />
-                  Approval tracking
-                </span>
-              </div>
-            </div>
+        <HeroBanner
+          tag="Onboarding"
+          title="Community / Pandit Onboarding"
+          sub="Submit onboarding details and track approval status for new communities and pandits."
+          chips={["Community requests", "Contact validation", "Approval tracking"]}
+        />
 
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-2">
-              {onboardingStats.map((item, idx) => {
-                const Icon = item.icon;
-                return (
-                  <motion.div
-                    key={item.label}
-                    initial={{ opacity: 0, y: 14 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.4, delay: idx * 0.06 }}
-                    className="hero-stat"
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className="icon-badge h-10 w-10 rounded-xl">
-                        <Icon className="h-5 w-5" />
-                      </span>
-                      <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/72">{item.label}</p>
-                        <p className="mt-1 text-xl font-bold text-white">{item.value}</p>
-                      </div>
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </div>
-          </div>
+        <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {onboardingStats.map((item, idx) => {
+            const Icon = item.icon;
+            return (
+              <motion.div
+                key={item.label}
+                initial={{ opacity: 0, y: 14 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.35, delay: idx * 0.05 }}
+                className="stat-card"
+              >
+                <div className="mb-3 flex items-center justify-between">
+                  <p className="text-xs font-semibold uppercase tracking-[0.08em] text-stone-500">{item.label}</p>
+                  <Icon className="h-5 w-5 text-brand" />
+                </div>
+                <p className="text-3xl font-bold text-stone-900">{item.value}</p>
+                <div className="progress-bar mt-3">
+                  <div className="progress-fill" style={{ width: `${Math.min(100, Math.max(8, Number(item.value) * 12))}%` }} />
+                </div>
+              </motion.div>
+            );
+          })}
         </div>
 
         {loadError && (

@@ -3,15 +3,17 @@ import { motion } from "framer-motion";
 import API, { getApiErrorMessage } from "../api";
 import Layout from "../components/Layout";
 import { AuthContext } from "../context/AuthContext";
+import HeroBanner from "../components/HeroBanner";
+import AnimatedCounter from "../components/AnimatedCounter";
 import {
+  ActivityIcon,
   CalendarIcon,
   ChartIcon,
   CheckCircleIcon,
   ClipboardIcon,
   CommunityIcon,
-  CrownIcon,
   FlagIcon,
-  ShieldIcon,
+  GlobeIcon,
   SparkIcon,
   UserIcon,
   UsersIcon,
@@ -171,10 +173,10 @@ function Admin() {
 
   const topStats = stats
     ? [
-        { label: "Users", value: stats.totalUsers, icon: UsersIcon },
-        { label: "Communities", value: stats.totalCommunities, icon: CommunityIcon },
-        { label: "Events", value: stats.totalEvents, icon: CalendarIcon },
-        { label: "Open reports", value: stats.openReports, icon: FlagIcon }
+        { label: "Total Users", value: stats.totalUsers, icon: UsersIcon, color: "text-[#ef9f27]" },
+        { label: "Daily Active Users", value: stats.dailyActiveUsers, icon: ActivityIcon, color: "text-[#22c55e]" },
+        { label: "Communities", value: stats.totalCommunities, icon: GlobeIcon, color: "text-[#c8782a]" },
+        { label: "Open Reports", value: stats.openReports, icon: FlagIcon, color: "text-[#ef4444]" }
       ]
     : [];
 
@@ -192,51 +194,40 @@ function Admin() {
   return (
     <Layout>
       <section className="aurora-shell p-8 sm:p-10">
-        <div className="hero-banner mb-6">
-          <div className="hero-content grid gap-8 lg:grid-cols-[minmax(0,1.4fr)_minmax(300px,0.95fr)] lg:items-center">
-            <div>
-              <div className="mb-4 flex flex-wrap gap-2">
-                <span className="hero-chip">
-                  <CrownIcon className="h-4 w-4" />
-                  Platform Admin
-                </span>
-                <span className="hero-chip">
-                  <ShieldIcon className="h-4 w-4" />
-                  Control layer
-                </span>
-              </div>
-              <h2 className="text-3xl font-bold sm:text-5xl">A more cinematic admin control center for the whole platform</h2>
-              <p className="mt-3 max-w-3xl text-sm text-white/90 sm:text-base">
-                Monitor KPIs, assign roles, review events, manage abuse reports, and approve onboarding or community requests from one polished workspace.
-              </p>
-            </div>
+        <HeroBanner
+          tag="Platform Admin"
+          title="Control Center"
+          sub="Monitor KPIs, users, events, abuse reports, and content categories from one powerful dashboard."
+          chips={["Role management", "Report moderation", "Approval workflows"]}
+        />
 
-            <div className="grid gap-3 sm:grid-cols-2">
-              {topStats.map((item, idx) => {
-                const Icon = item.icon;
-                return (
-                  <motion.div
-                    key={item.label}
-                    initial={{ opacity: 0, y: 12 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.4, delay: idx * 0.05 }}
-                    className="hero-stat"
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className="icon-badge h-10 w-10 rounded-xl">
-                        <Icon className="h-5 w-5" />
-                      </span>
-                      <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/72">{item.label}</p>
-                        <p className="mt-1 text-xl font-bold text-white">{item.value}</p>
-                      </div>
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </div>
+        {topStats.length > 0 && (
+          <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {topStats.map((item, idx) => {
+              const Icon = item.icon;
+              return (
+                <motion.div
+                  key={item.label}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.35, delay: idx * 0.05 }}
+                  className="stat-card"
+                >
+                  <div className="mb-3 flex items-center justify-between">
+                    <p className="text-xs font-semibold uppercase tracking-[0.08em] text-stone-500">{item.label}</p>
+                    <Icon className={`h-5 w-5 ${item.color}`} />
+                  </div>
+                  <div className="text-3xl font-bold text-stone-900">
+                    <AnimatedCounter value={item.value} />
+                  </div>
+                  <div className="progress-bar mt-3">
+                    <div className="progress-fill" style={{ width: `${Math.min(100, Math.max(8, Number(item.value) * 9))}%` }} />
+                  </div>
+                </motion.div>
+              );
+            })}
           </div>
-        </div>
+        )}
 
         {loadError && (
           <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800">

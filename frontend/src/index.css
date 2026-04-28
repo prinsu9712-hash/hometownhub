@@ -6,15 +6,15 @@
 
 @layer base {
   :root {
-    --bg-main: #f7f2eb;
+    --bg-main: #f5efe6;
     --bg-soft: #efe4d7;
-    --text-main: #3a281a;
-    --text-muted: #715b46;
+    --text-main: #1a1208;
+    --text-muted: #7a6040;
     --card-bg: rgba(255, 250, 244, 0.82);
-    --card-border: rgba(255, 255, 255, 0.62);
-    --brand: #8d5a34;
-    --brand-2: #b78656;
-    --brand-3: #dcc3a3;
+    --card-border: rgba(200, 120, 42, 0.18);
+    --brand: #c8782a;
+    --brand-2: #854f0b;
+    --brand-3: #ef9f27;
     --danger: #dc2626;
     --success: #059669;
   }
@@ -25,7 +25,7 @@
 
   body {
     margin: 0;
-    font-family: "Plus Jakarta Sans", "Segoe UI", sans-serif;
+    font-family: "DM Sans", "Segoe UI", sans-serif;
     color: var(--text-main);
     background:
       radial-gradient(circle at 8% 10%, rgba(141, 90, 52, 0.14), transparent 35%),
@@ -46,8 +46,8 @@
   h1,
   h2,
   h3 {
-    font-family: "Outfit", "Plus Jakarta Sans", sans-serif;
-    letter-spacing: -0.02em;
+    font-family: "Playfair Display", "Outfit", serif;
+    letter-spacing: -0.01em;
   }
 
   @keyframes float-gentle {
@@ -102,6 +102,70 @@
       transform: rotate(360deg);
     }
   }
+
+  @keyframes morph-grad {
+    0% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+    100% {
+      background-position: 0% 50%;
+    }
+  }
+
+  @keyframes particle-drift {
+    0% {
+      transform: translateY(0) translateX(0);
+      opacity: 0.64;
+    }
+    100% {
+      transform: translateY(-120px) translateX(30px);
+      opacity: 0;
+    }
+  }
+
+  @keyframes slide-right {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(100%);
+    }
+  }
+
+  @keyframes wave {
+    0%,
+    100% {
+      transform: scaleY(0.5);
+    }
+    50% {
+      transform: scaleY(1.2);
+    }
+  }
+
+  @keyframes pulse-ring {
+    0% {
+      transform: scale(1);
+      opacity: 1;
+    }
+    100% {
+      transform: scale(1.6);
+      opacity: 0;
+    }
+  }
+
+  @keyframes count-up {
+    from {
+      opacity: 0;
+      transform: scale(0.7);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
 }
 
 @layer components {
@@ -121,11 +185,36 @@
   .primary-btn {
     @apply inline-flex items-center justify-center rounded-xl px-4 py-2.5 font-semibold text-white transition;
     @apply bg-gradient-to-r from-brand to-brand2 hover:brightness-110 active:scale-[0.98];
+    position: relative;
+    overflow: hidden;
+  }
+
+  .primary-btn::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transform: translateX(-100%);
+    transition: transform 0.5s ease;
+  }
+
+  .primary-btn:hover::before {
+    transform: translateX(100%);
+  }
+
+  .primary-btn:hover {
+    box-shadow: 0 8px 30px rgba(200, 120, 42, 0.5);
+    transform: translateY(-2px);
+  }
+
+  .primary-btn:active {
+    transform: translateY(0);
   }
 
   .muted-btn {
-    @apply inline-flex items-center justify-center rounded-xl px-4 py-2.5 font-semibold transition;
-    @apply bg-stone-100 text-stone-700 hover:bg-stone-200;
+    @apply inline-flex items-center justify-center rounded-full px-4 py-2.5 font-semibold transition;
+    @apply bg-transparent text-brand hover:bg-[#faeeda] hover:text-[#854f0b];
+    border: 1.5px solid rgba(200, 120, 42, 0.18);
   }
 
   .glass-tile {
@@ -178,9 +267,9 @@
 
   .hero-banner {
     @apply relative overflow-hidden rounded-[1.9rem] p-6 text-white shadow-glass sm:p-8;
-    background:
-      linear-gradient(125deg, rgba(124, 74, 37, 0.98), rgba(184, 129, 73, 0.94) 60%, rgba(234, 161, 83, 0.92)),
-      radial-gradient(circle at top right, rgba(255, 255, 255, 0.26), transparent 34%);
+    background: linear-gradient(135deg, #7a4010 0%, #c8782a 40%, #ef9f27 80%, #fac775 100%);
+    background-size: 300% 300%;
+    animation: morph-grad 8s ease infinite;
     animation: pulse-glow 9s ease-in-out infinite;
   }
 
@@ -211,6 +300,31 @@
 
   .hero-content {
     @apply relative z-[1];
+  }
+
+  .hero-gradient {
+    @apply relative overflow-hidden rounded-[1.4rem];
+    background: linear-gradient(135deg, #7a4010 0%, #c8782a 40%, #ef9f27 80%, #fac775 100%);
+    background-size: 300% 300%;
+    animation: morph-grad 8s ease infinite;
+  }
+
+  .hero-gradient::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 70% 50%, rgba(255, 255, 255, 0.12) 0%, transparent 60%);
+    pointer-events: none;
+  }
+
+  .particle {
+    position: absolute;
+    width: 5px;
+    height: 5px;
+    border-radius: 999px;
+    background: rgba(255, 200, 100, 0.7);
+    pointer-events: none;
+    animation: particle-drift linear infinite;
   }
 
   .hero-chip {
@@ -279,6 +393,32 @@
     @apply inline-flex h-14 w-14 items-center justify-center rounded-2xl border border-white/80 shadow-sm;
   }
 
+  .stat-card {
+    @apply relative overflow-hidden rounded-2xl p-5 transition;
+    border: 1px solid rgba(200, 120, 42, 0.18);
+    background: #fffdf9;
+  }
+
+  .stat-card::after {
+    content: "";
+    position: absolute;
+    inset: auto 0 0 0;
+    height: 3px;
+    background: linear-gradient(90deg, #c8782a, #ef9f27);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.3s ease;
+  }
+
+  .stat-card:hover::after {
+    transform: scaleX(1);
+  }
+
+  .stat-card:hover {
+    box-shadow: 0 8px 32px rgba(200, 120, 42, 0.14);
+    transform: translateY(-3px);
+  }
+
   .section-frame {
     @apply relative overflow-hidden rounded-[1.7rem] p-6 shadow-sm backdrop-blur-xl;
     border: 1px solid rgba(214, 211, 209, 0.8);
@@ -342,6 +482,24 @@
     @apply border-transparent bg-gradient-to-r from-brand to-brand2 text-white shadow-lg;
   }
 
+  .nav-pill {
+    @apply inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold text-[#7a6040] transition;
+    border: 1px solid transparent;
+    white-space: nowrap;
+  }
+
+  .nav-pill:hover {
+    background: #faeeda;
+    color: #854f0b;
+  }
+
+  .nav-pill-active {
+    background: #fffdf9;
+    border-color: rgba(200, 120, 42, 0.18);
+    color: #1a1208;
+    box-shadow: 0 2px 12px rgba(200, 120, 42, 0.12);
+  }
+
   .feed-card {
     @apply relative overflow-hidden rounded-[1.5rem] p-5 shadow-sm backdrop-blur-xl;
     border: 1px solid rgba(214, 211, 209, 0.8);
@@ -354,6 +512,84 @@
     inset: 0;
     background: radial-gradient(circle at top right, rgba(183, 134, 86, 0.12), transparent 28%);
     pointer-events: none;
+  }
+
+  .notification-item {
+    @apply flex gap-3 rounded-xl border border-transparent px-4 py-3 transition;
+    cursor: pointer;
+  }
+
+  .notification-item:hover {
+    background: #faeeda;
+    border-color: rgba(200, 120, 42, 0.18);
+  }
+
+  .notification-item-unread {
+    background: rgba(250, 238, 218, 0.62);
+  }
+
+  .progress-bar {
+    height: 6px;
+    border-radius: 3px;
+    overflow: hidden;
+    background: #faeeda;
+  }
+
+  .progress-fill {
+    height: 100%;
+    border-radius: 3px;
+    position: relative;
+    background: linear-gradient(90deg, #c8782a, #ef9f27);
+    transition: width 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .progress-fill::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.42), transparent);
+    animation: slide-right 2s ease infinite;
+  }
+
+  .live-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: #22c55e;
+    position: relative;
+    display: inline-block;
+  }
+
+  .live-dot::after {
+    content: "";
+    position: absolute;
+    inset: -3px;
+    border-radius: 999px;
+    background: rgba(34, 197, 94, 0.4);
+    animation: pulse-ring 1.5s ease-out infinite;
+  }
+
+  .wave-bar {
+    display: inline-block;
+    width: 4px;
+    border-radius: 2px;
+    background: #c8782a;
+    animation: wave 0.8s ease-in-out infinite;
+  }
+
+  .icon-circle {
+    width: 44px;
+    height: 44px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .kpi-value {
+    display: inline-block;
+    animation: count-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
   }
 }
 

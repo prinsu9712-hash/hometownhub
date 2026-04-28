@@ -3,16 +3,20 @@ import { motion } from "framer-motion";
 import { useContext } from "react";
 import Layout from "../components/Layout";
 import { AuthContext } from "../context/AuthContext";
+import HeroBanner from "../components/HeroBanner";
+import AnimatedCounter from "../components/AnimatedCounter";
 import {
+  ActivityIcon,
   ArrowUpRightIcon,
   BellIcon,
-  ChartIcon,
   ClipboardIcon,
   CommunityIcon,
-  PulseIcon,
+  GlobeIcon,
+  RadioIcon,
   ShieldIcon,
   SparkIcon,
-  UserIcon
+  UserIcon,
+  UsersIcon
 } from "../components/Icons";
 
 function Dashboard() {
@@ -66,77 +70,21 @@ function Dashboard() {
   ];
   const visibleCards = cards.filter((card) => card.title !== "Admin" || user?.role === "ADMIN");
   const topStats = [
-    { label: "Live tools", value: visibleCards.length, icon: SparkIcon },
-    { label: "Member role", value: user?.role || "USER", icon: ShieldIcon },
-    { label: "Always-on flow", value: "24/7", icon: PulseIcon }
+    { label: "Total Users", value: 20, icon: UsersIcon, color: "text-[#fac775]" },
+    { label: "Active Today", value: 1, icon: ActivityIcon, color: "text-[#ef9f27]" },
+    { label: "Communities", value: 6, icon: GlobeIcon, color: "text-[#c8782a]" },
+    { label: "Events Live", value: 1, icon: RadioIcon, color: "text-[#854f0b]" }
   ];
 
   return (
     <Layout>
       <section className="aurora-shell p-8 sm:p-10">
-        <div className="hero-banner mb-8">
-          <div className="hero-content grid gap-8 lg:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.9fr)] lg:items-center">
-            <div>
-              <div className="mb-4 flex flex-wrap gap-2">
-                <span className="hero-chip">
-                  <SparkIcon className="h-4 w-4" />
-                  Hometown Hub
-                </span>
-                <span className="hero-chip">
-                  <CommunityIcon className="h-4 w-4" />
-                  Local-first network
-                </span>
-              </div>
-              <h1 className="text-3xl font-bold sm:text-5xl">
-                A living hometown dashboard that feels active, social, and real
-              </h1>
-              <p className="mt-4 max-w-3xl text-sm text-white/90 sm:text-base">
-                Reconnect with your hometown, coordinate local events, and keep every community update, request, and conversation in one animated space.
-              </p>
-              <div className="mt-5 flex flex-wrap gap-3">
-                <span className="hero-chip">
-                  <BellIcon className="h-4 w-4" />
-                  Event alerts
-                </span>
-                <span className="hero-chip">
-                  <ClipboardIcon className="h-4 w-4" />
-                  Onboarding workflow
-                </span>
-                <span className="hero-chip">
-                  <ChartIcon className="h-4 w-4" />
-                  Community control
-                </span>
-              </div>
-            </div>
-
-            <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
-              {topStats.map((item, idx) => {
-                const Icon = item.icon;
-                return (
-                  <motion.div
-                    key={item.label}
-                    initial={{ opacity: 0, y: 16 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.45, delay: idx * 0.08 }}
-                    className="hero-stat"
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className="icon-badge h-10 w-10 rounded-xl">
-                        <Icon className="h-5 w-5" />
-                      </span>
-                      <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white/72">
-                          {item.label}
-                        </p>
-                        <p className="mt-1 text-xl font-bold text-white">{item.value}</p>
-                      </div>
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
+        <HeroBanner
+          tag="Hometown Hub"
+          title="Digital Community Platform for Local Connection"
+          sub="Reconnect with your hometown, participate in local events, and keep your community informed in one vibrant space."
+          chips={["Local-first network", "Event alerts", "Onboarding workflow"]}
+        />
 
         <motion.div
           initial={{ opacity: 0, y: 14 }}
@@ -166,6 +114,39 @@ function Dashboard() {
             Access
             <span className="metric-value">{user?.role || "User"}</span>
           </span>
+          <span className="metric-pill">
+            <span className="live-dot" />
+            Platform
+            <span className="metric-value">Live</span>
+          </span>
+        </div>
+
+        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {topStats.map((item, idx) => {
+            const Icon = item.icon;
+            return (
+              <motion.div
+                key={item.label}
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: idx * 0.06 }}
+                className="stat-card"
+              >
+                <div className="mb-3 flex items-center justify-between">
+                  <span className="text-xs font-semibold uppercase tracking-[0.08em] text-stone-500">
+                    {item.label}
+                  </span>
+                  <Icon className={`h-5 w-5 ${item.color}`} />
+                </div>
+                <div className="text-3xl font-bold text-stone-900">
+                  <AnimatedCounter value={item.value} />
+                </div>
+                <div className="progress-bar mt-3">
+                  <div className="progress-fill" style={{ width: `${Math.min(100, item.value * 12)}%` }} />
+                </div>
+              </motion.div>
+            );
+          })}
         </div>
 
         <div className="mt-8 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
