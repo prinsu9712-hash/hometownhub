@@ -1,6 +1,8 @@
 import axios from "axios";
 
 const stripTrailingSlash = (value) => String(value || "").replace(/\/+$/, "");
+const AUTH_EVENT_NAME = "auth:expired";
+const AUTH_ERROR_MESSAGES = new Set(["Invalid token", "User not found", "Not authorized"]);
 
 const normalizeApiBaseUrl = (value) => {
   const normalized = stripTrailingSlash(value);
@@ -21,10 +23,16 @@ const configuredApiUrl =
 
 export const API_BASE_URL = normalizeApiBaseUrl(configuredApiUrl);
 export const API_ORIGIN = API_BASE_URL.replace(/\/api$/, "");
+export const AUTH_EXPIRED_EVENT = AUTH_EVENT_NAME;
 
 const API = axios.create({
   baseURL: API_BASE_URL
 });
+
+const clearStoredAuth = () => {
+  localStorage.removeItem("token");
+  localStorage.removeItem("user");
+};
 
 API.interceptors.request.use((req) => {
   const token = localStorage.getItem("token");
@@ -35,6 +43,30 @@ API.interceptors.request.use((req) => {
 
   return req;
 });
+
+API.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const message = error?.response?.data?.message || error?.response?.data?.error || "";
+    const status = error?.response?.status;
+
+    if (status === 401 && AUTH_ERROR_MESSAGES.has(message)) {
+      clearStoredAuth();
+
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent(AUTH_EVENT_NAME, {
+            detail: {
+              message: "Session expired. Please log in again."
+            }
+          })
+        );
+      }
+    }
+
+    return Promise.reject(error);
+  }
+);
 
 export const getApiErrorMessage = (error, fallback = "Request failed.") => {
   const isHostedWithoutApiConfig =
@@ -49,6 +81,10 @@ export const getApiErrorMessage = (error, fallback = "Request failed.") => {
 
   if (error?.message === "Network Error") {
     return `Cannot reach the backend at ${API_BASE_URL}. Make sure your backend is deployed and CORS allows this Vercel domain.`;
+  }
+
+  if (error?.response?.status === 401 && AUTH_ERROR_MESSAGES.has(error?.response?.data?.message)) {
+    return "Session expired. Please log in again.";
   }
 
   return error?.response?.data?.message || error?.response?.data?.error || fallback;

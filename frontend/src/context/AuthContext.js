@@ -1,5 +1,5 @@
 import { createContext, useState, useEffect } from "react";
-import API, { getApiErrorMessage } from "../api";
+import API, { AUTH_EXPIRED_EVENT, getApiErrorMessage } from "../api";
 
 export const AuthContext = createContext();
 
@@ -8,23 +8,43 @@ export const AuthProvider = ({ children }) => {
   const [isAuthReady, setIsAuthReady] = useState(false);
 
   useEffect(() => {
-    try {
-      const storedUser = localStorage.getItem("user");
-      const storedToken = localStorage.getItem("token");
-      if (storedUser && storedToken) {
-        setUser(JSON.parse(storedUser));
-      } else {
-        localStorage.removeItem("user");
-        localStorage.removeItem("token");
-        setUser(null);
-      }
-    } catch (error) {
+    const clearAuthState = () => {
       localStorage.removeItem("user");
       localStorage.removeItem("token");
       setUser(null);
-    } finally {
+    };
+
+    const initializeAuth = async () => {
+      try {
+        const storedUser = localStorage.getItem("user");
+        const storedToken = localStorage.getItem("token");
+
+        if (!storedUser || !storedToken) {
+          clearAuthState();
+          return;
+        }
+
+        const { data } = await API.get("/auth/me");
+        localStorage.setItem("user", JSON.stringify(data));
+        setUser(data);
+      } catch (error) {
+        clearAuthState();
+      } finally {
+        setIsAuthReady(true);
+      }
+    };
+
+    const handleExpiredAuth = () => {
+      clearAuthState();
       setIsAuthReady(true);
-    }
+    };
+
+    initializeAuth();
+    window.addEventListener(AUTH_EXPIRED_EVENT, handleExpiredAuth);
+
+    return () => {
+      window.removeEventListener(AUTH_EXPIRED_EVENT, handleExpiredAuth);
+    };
   }, []);
 
   const login = async (credentials) => {
