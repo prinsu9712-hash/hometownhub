@@ -4,6 +4,24 @@ import { motion } from "framer-motion";
 import Layout from "../components/Layout";
 import API, { getApiErrorMessage } from "../api";
 import { AuthContext } from "../context/AuthContext";
+import {
+  ArrowUpRightIcon,
+  CheckCircleIcon,
+  ClipboardIcon,
+  CommunityIcon,
+  CompassIcon,
+  FilterIcon,
+  GlobeIcon,
+  MailIcon,
+  MapPinIcon,
+  PulseIcon,
+  SearchIcon,
+  ShieldIcon,
+  SparkIcon,
+  UserIcon,
+  UsersIcon,
+  XCircleIcon
+} from "../components/Icons";
 
 const INDIAN_STATES = [
   { name: "Andhra Pradesh", cities: ["Visakhapatnam", "Vijayawada", "Tirupati"] },
@@ -161,6 +179,28 @@ function Communities() {
     return results;
   }, [filtered, stateFilter, cityFilter]);
 
+  const dashboardStats = useMemo(() => {
+    const totalMembers = communities.reduce((sum, community) => sum + getMemberCount(community), 0);
+    const totalPending = communities.reduce((sum, community) => sum + getPendingCount(community), 0);
+    const activeStates = new Set(
+      communities
+        .map((community) => getCommunityState(community))
+        .filter(Boolean)
+    ).size;
+
+    return [
+      { label: "Live communities", value: communities.length, icon: CommunityIcon },
+      { label: "Members connected", value: totalMembers, icon: UsersIcon },
+      { label: "Pending joins", value: totalPending, icon: PulseIcon },
+      { label: "States active", value: activeStates, icon: GlobeIcon }
+    ];
+  }, [communities]);
+
+  const showcasedStates = useMemo(() => {
+    if (selectedState) return [selectedState];
+    return INDIAN_STATES.slice(0, 6);
+  }, [selectedState]);
+
   const isMember = useCallback(
     (community) =>
       Boolean(
@@ -284,15 +324,67 @@ function Communities() {
 
   return (
     <Layout>
-      <section className="hero-glass p-8 sm:p-10">
-        <div className="mb-6 rounded-2xl bg-gradient-to-r from-[#8d5a34] via-[#b78656] to-[#e39d58] p-6 text-white shadow-glass">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/85">
-            Local Network
-          </p>
-          <h2 className="mt-2 text-3xl font-bold sm:text-4xl">Discover Hometown Communities</h2>
-          <p className="mt-2 text-sm text-white/90">
-            Join your city or village community, share updates, and participate in events.
-          </p>
+      <section className="aurora-shell p-8 sm:p-10">
+        <div className="hero-banner mb-6">
+          <div className="hero-content grid gap-8 lg:grid-cols-[minmax(0,1.4fr)_minmax(300px,0.95fr)] lg:items-center">
+            <div>
+              <div className="mb-4 flex flex-wrap gap-2">
+                <span className="hero-chip">
+                  <CommunityIcon className="h-4 w-4" />
+                  Local Network
+                </span>
+                <span className="hero-chip">
+                  <CompassIcon className="h-4 w-4" />
+                  City and village discovery
+                </span>
+              </div>
+              <h2 className="text-3xl font-bold sm:text-5xl">Explore hometown communities with a richer, more active social layer</h2>
+              <p className="mt-3 max-w-3xl text-sm text-white/90 sm:text-base">
+                Join the right community, request access, moderate member flow, and launch new city or village spaces from one animated hub.
+              </p>
+              <div className="mt-5 flex flex-wrap gap-3">
+                <span className="hero-chip">
+                  <ShieldIcon className="h-4 w-4" />
+                  Rules and moderation
+                </span>
+                <span className="hero-chip">
+                  <PulseIcon className="h-4 w-4" />
+                  Pending approvals
+                </span>
+                <span className="hero-chip">
+                  <SparkIcon className="h-4 w-4" />
+                  Community creation
+                </span>
+              </div>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              {dashboardStats.map((item, idx) => {
+                const Icon = item.icon;
+                return (
+                  <motion.div
+                    key={item.label}
+                    initial={{ opacity: 0, y: 14 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4, delay: idx * 0.05 }}
+                    className="hero-stat"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="icon-badge h-10 w-10 rounded-xl">
+                        <Icon className="h-5 w-5" />
+                      </span>
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/72">
+                          {item.label}
+                        </p>
+                        <p className="mt-1 text-xl font-bold text-white">{item.value}</p>
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </div>
         </div>
 
         {pageError && (
@@ -312,34 +404,55 @@ function Communities() {
             <p className="section-kicker">Explore</p>
             <h2 className="section-title">Communities</h2>
           </div>
-          <p className="text-sm text-stone-600">{stateFilteredCommunities.length} results</p>
+          <div className="flex flex-wrap gap-2">
+            <span className="metric-pill">
+              <SearchIcon className="h-4 w-4 text-brand" />
+              Results
+              <span className="metric-value">{stateFilteredCommunities.length}</span>
+            </span>
+            <span className="metric-pill">
+              <FilterIcon className="h-4 w-4 text-brand" />
+              Filter
+              <span className="metric-value">{stateFilter === "All" ? "All states" : stateFilter}</span>
+            </span>
+          </div>
         </div>
 
-        <div className="mb-8 rounded-2xl border border-stone-200 bg-white/70 p-6 shadow-sm">
+        <div className="section-frame subtle-grid mb-8">
           <div className="mb-4 flex items-center justify-between">
             <p className="text-sm font-semibold uppercase tracking-[0.3em] text-stone-500">
               Statewise communities
             </p>
-            <span className="text-xs text-stone-500">
+            <span className="metric-pill">
+              <GlobeIcon className="h-4 w-4 text-brand" />
               Showing {stateFilter === "All" ? "all states" : stateFilter}
             </span>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            {(stateFilter === "All" ? INDIAN_STATES : selectedState ? [selectedState] : []).map((state) => {
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {showcasedStates.map((state) => {
               const count = communities.filter(
                 (community) => getCommunityState(community).toLowerCase() === state.name.toLowerCase()
               ).length;
 
               return (
-                <article key={state.name} className="rounded-2xl border border-stone-200 p-4">
-                  <h3 className="font-semibold text-stone-900">{state.name}</h3>
-                  <p className="text-sm text-stone-500">{state.cities.join(", ")} and nearby towns</p>
-                  <p className="mt-2 text-xs font-semibold uppercase text-stone-500">
-                    {count || "Create new"} communities
+                <article key={state.name} className="feature-card">
+                  <div className="flex items-start justify-between gap-3">
+                    <span className="icon-surface bg-gradient-to-br from-amber-100 via-orange-50 to-white text-brand">
+                      <GlobeIcon className="h-6 w-6" />
+                    </span>
+                    <span className="metric-pill">
+                      <SparkIcon className="h-3.5 w-3.5 text-brand" />
+                      {count || "New"}
+                    </span>
+                  </div>
+                  <h3 className="mt-4 text-xl font-semibold text-stone-900">{state.name}</h3>
+                  <p className="mt-2 text-sm text-stone-500">{state.cities.join(", ")} and nearby towns</p>
+                  <p className="mt-4 text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
+                    {count ? `${count} live communities` : "Ready for a first community"}
                   </p>
                   <button
                     type="button"
-                    className="primary-btn mt-4"
+                    className="primary-btn mt-5"
                     onClick={() => {
                       setForm((prev) => ({
                         ...prev,
@@ -357,115 +470,164 @@ function Communities() {
           </div>
         </div>
 
-        <div className="mb-7 grid gap-3 md:grid-cols-3">
-          <select
-            className="soft-input"
-            value={stateFilter}
-            onChange={(e) => {
-              setStateFilter(e.target.value);
-              setCityFilter("All");
-            }}
-          >
-            <option value="All">All States</option>
-            {INDIAN_STATES.map((state) => (
-              <option key={state.name} value={state.name}>
-                {state.name}
-              </option>
-            ))}
-          </select>
-          <select
-            className="soft-input"
-            value={cityFilter}
-            disabled={stateFilter === "All"}
-            onChange={(e) => setCityFilter(e.target.value)}
-          >
-            <option value="All">All Cities</option>
-            {derivedCitiesForState.map((city) => (
-              <option key={city} value={city}>
-                {city}
-              </option>
-            ))}
-          </select>
-          <button
-            type="button"
-            className="muted-btn"
-            onClick={() => {
-              setStateFilter("All");
-              setCityFilter("All");
-            }}
-          >
-            Reset filters
-          </button>
+        <div className="section-frame mb-7 grid gap-3 md:grid-cols-3">
+          <div className="input-shell md:col-span-3">
+            <label className="input-label">
+              <SearchIcon className="h-4 w-4" />
+              Search communities
+            </label>
+            <input
+              className="soft-input"
+              placeholder="Search by community, city, state, or description"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+          <div className="input-shell">
+            <label className="input-label">
+              <GlobeIcon className="h-4 w-4" />
+              State filter
+            </label>
+            <select
+              className="soft-input"
+              value={stateFilter}
+              onChange={(e) => {
+                setStateFilter(e.target.value);
+                setCityFilter("All");
+              }}
+            >
+              <option value="All">All States</option>
+              {INDIAN_STATES.map((state) => (
+                <option key={state.name} value={state.name}>
+                  {state.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="input-shell">
+            <label className="input-label">
+              <MapPinIcon className="h-4 w-4" />
+              City filter
+            </label>
+            <select
+              className="soft-input"
+              value={cityFilter}
+              disabled={stateFilter === "All"}
+              onChange={(e) => setCityFilter(e.target.value)}
+            >
+              <option value="All">All Cities</option>
+              {derivedCitiesForState.map((city) => (
+                <option key={city} value={city}>
+                  {city}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="input-shell flex items-end">
+            <button
+              type="button"
+              className="muted-btn w-full"
+              onClick={() => {
+                setStateFilter("All");
+                setCityFilter("All");
+              }}
+            >
+              Reset filters
+            </button>
+          </div>
         </div>
-
-        <input
-          className="soft-input mb-7"
-          placeholder="Search by community, city, state, or description"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
 
         {user && (
           <form
             ref={formRef}
             onSubmit={createCommunity}
-            className="mb-8 glass-tile border-stone-200/90 p-5"
+            className="section-frame mb-8"
           >
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-stone-900">
+              <div>
+                <p className="section-kicker">
+                  {user?.role === "ADMIN" ? "Direct creation" : "Approval request"}
+                </p>
+                <h3 className="mt-2 text-2xl font-semibold text-stone-900">
+                  {user?.role === "ADMIN" ? "Create Community" : "Request Community"}
+                </h3>
+              </div>
+              <span className="metric-pill">
+                <ShieldIcon className="h-4 w-4 text-brand" />
                 {user?.role === "ADMIN" ? "Create Community" : "Request Community"}
-              </h3>
-              <span className="text-xs font-semibold uppercase tracking-[0.2em] text-stone-500">
-                {user?.role === "ADMIN" ? "Admin direct publish" : "Requires admin approval"}
               </span>
             </div>
-            <div className="grid gap-3 md:grid-cols-2">
-              <input
-                name="name"
-                value={form.name}
-                onChange={handleCreateChange}
-                className="soft-input"
-                placeholder="Community name"
-                required
-              />
-              <select
-                name="state"
-                value={form.state}
-                onChange={(e) => {
-                  handleCreateChange(e);
-                  setForm((prev) => ({ ...prev, city: "" }));
-                }}
-                className="soft-input"
-                required
-              >
-                <option value="">Select state</option>
-                {INDIAN_STATES.map((state) => (
-                  <option key={state.name} value={state.name}>
-                    {state.name}
-                  </option>
-                ))}
-              </select>
-              <input
-                name="city"
-                value={form.city}
-                onChange={handleCreateChange}
-                className="soft-input"
-                placeholder="City or village"
-                list="community-city-options"
-                required
-              />
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="input-shell">
+                <label className="input-label">
+                  <CommunityIcon className="h-4 w-4" />
+                  Community name
+                </label>
+                <input
+                  name="name"
+                  value={form.name}
+                  onChange={handleCreateChange}
+                  className="soft-input"
+                  placeholder="Community name"
+                  required
+                />
+              </div>
+              <div className="input-shell">
+                <label className="input-label">
+                  <GlobeIcon className="h-4 w-4" />
+                  State
+                </label>
+                <select
+                  name="state"
+                  value={form.state}
+                  onChange={(e) => {
+                    handleCreateChange(e);
+                    setForm((prev) => ({ ...prev, city: "" }));
+                  }}
+                  className="soft-input"
+                  required
+                >
+                  <option value="">Select state</option>
+                  {INDIAN_STATES.map((state) => (
+                    <option key={state.name} value={state.name}>
+                      {state.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="input-shell">
+                <label className="input-label">
+                  <MapPinIcon className="h-4 w-4" />
+                  City or village
+                </label>
+                <input
+                  name="city"
+                  value={form.city}
+                  onChange={handleCreateChange}
+                  className="soft-input"
+                  placeholder="City or village"
+                  list="community-city-options"
+                  required
+                />
+              </div>
               <datalist id="community-city-options">
                 {formCitySuggestions.map((city) => (
                   <option key={city} value={city} />
                 ))}
               </datalist>
-              <textarea
-                name="description"
-                value={form.description}
-                onChange={handleCreateChange}
-                className="soft-input md:col-span-2 min-h-[96px]"
-                placeholder="Community description"
-              />
+              <div className="input-shell md:col-span-2">
+                <label className="input-label">
+                  <SparkIcon className="h-4 w-4" />
+                  Description
+                </label>
+                <textarea
+                  name="description"
+                  value={form.description}
+                  onChange={handleCreateChange}
+                  className="soft-input min-h-[96px]"
+                  placeholder="Community description"
+                />
+              </div>
             </div>
 
             {createError && (
@@ -492,26 +654,50 @@ function Communities() {
           </div>
         )}
 
-        <div className="grid gap-5 md:grid-cols-2">
+        <div className="grid gap-5 xl:grid-cols-2">
           {stateFilteredCommunities.map((community, idx) => (
             <motion.div
               key={community._id}
               initial={{ opacity: 0, y: 14 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: idx * 0.04 }}
-              className="glass-tile p-6 transition hover:-translate-y-1 hover:shadow-lg"
+              className="feature-card"
             >
-              <h3 className="text-xl font-semibold text-stone-900">{community.name}</h3>
-              <p className="mt-1 text-sm font-medium text-brand">
-                {getCommunityCity(community)}{getCommunityState(community) ? `, ${getCommunityState(community)}` : ""}
-              </p>
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="flex items-start gap-4">
+                  <span className="icon-surface bg-gradient-to-br from-amber-100 via-orange-50 to-white text-brand">
+                    <CommunityIcon className="h-6 w-6" />
+                  </span>
+                  <div>
+                    <h3 className="text-xl font-semibold text-stone-900">{community.name}</h3>
+                    <p className="mt-1 flex items-center gap-2 text-sm font-medium text-brand">
+                      <MapPinIcon className="h-4 w-4" />
+                      {getCommunityCity(community)}{getCommunityState(community) ? `, ${getCommunityState(community)}` : ""}
+                    </p>
+                  </div>
+                </div>
+                <span className="metric-pill">
+                  <SparkIcon className="h-4 w-4 text-brand" />
+                  Community Hub
+                </span>
+              </div>
               <p className="mt-3 text-sm text-stone-600">{community.description || "No description yet."}</p>
-              <p className="mt-3 text-xs font-semibold uppercase tracking-[0.14em] text-stone-500">
-                Members: {getMemberCount(community)}
-              </p>
-              <p className="mt-1 text-xs font-semibold uppercase tracking-[0.14em] text-stone-500">
-                Pending Requests: {getPendingCount(community)}
-              </p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <span className="tool-chip">
+                  <UsersIcon className="h-4 w-4 text-brand" />
+                  Members: {getMemberCount(community)}
+                </span>
+                <span className="tool-chip">
+                  <PulseIcon className="h-4 w-4 text-brand" />
+                  Pending: {getPendingCount(community)}
+                </span>
+                {community.rules && (
+                  <span className="tool-chip">
+                    <ShieldIcon className="h-4 w-4 text-brand" />
+                    Rules ready
+                  </span>
+                )}
+              </div>
 
               {membershipMessage[community._id] && (
                 <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700">
@@ -525,6 +711,7 @@ function Communities() {
                   className="primary-btn"
                   type="button"
                 >
+                  <ArrowUpRightIcon className="mr-2 h-4 w-4" />
                   Open Community Hub
                 </button>
                 <button
@@ -550,40 +737,58 @@ function Communities() {
               </div>
 
               {canModerateCommunity(community) && (
-                <div className="mt-5 rounded-xl border border-stone-200 bg-white/75 p-4">
-                  <p className="text-sm font-semibold text-stone-800">Community Rules and Guidelines</p>
-                  <div className="mt-3 grid gap-2">
-                    <textarea
-                      className="soft-input min-h-[72px]"
-                      placeholder="Rules"
-                      value={policyDrafts[community._id]?.rules ?? community.rules ?? ""}
-                      onChange={(e) =>
-                        setPolicyDrafts((prev) => ({
-                          ...prev,
-                          [community._id]: {
-                            ...(prev[community._id] || {}),
-                            rules: e.target.value,
-                            guidelines:
-                              prev[community._id]?.guidelines ?? community.guidelines ?? ""
-                          }
-                        }))
-                      }
-                    />
-                    <textarea
-                      className="soft-input min-h-[72px]"
-                      placeholder="Guidelines"
-                      value={policyDrafts[community._id]?.guidelines ?? community.guidelines ?? ""}
-                      onChange={(e) =>
-                        setPolicyDrafts((prev) => ({
-                          ...prev,
-                          [community._id]: {
-                            ...(prev[community._id] || {}),
-                            guidelines: e.target.value,
-                            rules: prev[community._id]?.rules ?? community.rules ?? ""
-                          }
-                        }))
-                      }
-                    />
+                <div className="section-frame mt-5 p-4">
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <p className="text-sm font-semibold text-stone-800">Community Rules and Guidelines</p>
+                    <span className="metric-pill">
+                      <ShieldIcon className="h-4 w-4 text-brand" />
+                      Moderator tools
+                    </span>
+                  </div>
+                  <div className="grid gap-3">
+                    <div className="input-shell">
+                      <label className="input-label">
+                        <ShieldIcon className="h-4 w-4" />
+                        Rules
+                      </label>
+                      <textarea
+                        className="soft-input min-h-[72px]"
+                        placeholder="Rules"
+                        value={policyDrafts[community._id]?.rules ?? community.rules ?? ""}
+                        onChange={(e) =>
+                          setPolicyDrafts((prev) => ({
+                            ...prev,
+                            [community._id]: {
+                              ...(prev[community._id] || {}),
+                              rules: e.target.value,
+                              guidelines:
+                                prev[community._id]?.guidelines ?? community.guidelines ?? ""
+                            }
+                          }))
+                        }
+                      />
+                    </div>
+                    <div className="input-shell">
+                      <label className="input-label">
+                        <ClipboardIcon className="h-4 w-4" />
+                        Guidelines
+                      </label>
+                      <textarea
+                        className="soft-input min-h-[72px]"
+                        placeholder="Guidelines"
+                        value={policyDrafts[community._id]?.guidelines ?? community.guidelines ?? ""}
+                        onChange={(e) =>
+                          setPolicyDrafts((prev) => ({
+                            ...prev,
+                            [community._id]: {
+                              ...(prev[community._id] || {}),
+                              guidelines: e.target.value,
+                              rules: prev[community._id]?.rules ?? community.rules ?? ""
+                            }
+                          }))
+                        }
+                      />
+                    </div>
                     <button
                       type="button"
                       className="muted-btn"
@@ -599,30 +804,41 @@ function Communities() {
                       {(community.pendingMembers || []).map((pendingUser) => (
                         <div
                           key={pendingUser._id}
-                          className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-stone-50 px-3 py-2 text-sm"
+                          className="rounded-2xl border border-stone-200/75 bg-stone-50/90 px-3 py-3 text-sm"
                         >
-                          <span className="font-medium text-stone-700">
-                            {pendingUser.name} ({pendingUser.email})
-                          </span>
-                          <div className="flex gap-2">
-                            <button
-                              type="button"
-                              className="rounded-lg bg-emerald-100 px-3 py-1 font-semibold text-emerald-700"
-                              onClick={() =>
-                                handleRequestAction(community._id, pendingUser._id, "approve")
-                              }
-                            >
-                              Approve
-                            </button>
-                            <button
-                              type="button"
-                              className="rounded-lg bg-rose-100 px-3 py-1 font-semibold text-rose-700"
-                              onClick={() =>
-                                handleRequestAction(community._id, pendingUser._id, "reject")
-                              }
-                            >
-                              Reject
-                            </button>
+                          <div className="flex flex-wrap items-center justify-between gap-3">
+                            <div>
+                              <p className="flex items-center gap-2 font-medium text-stone-700">
+                                <UserIcon className="h-4 w-4 text-brand" />
+                                {pendingUser.name}
+                              </p>
+                              <p className="mt-1 flex items-center gap-2 text-xs text-stone-500">
+                                <MailIcon className="h-4 w-4 text-brand" />
+                                {pendingUser.email}
+                              </p>
+                            </div>
+                            <div className="flex gap-2">
+                              <button
+                                type="button"
+                                className="inline-flex items-center gap-2 rounded-lg bg-emerald-100 px-3 py-1 font-semibold text-emerald-700"
+                                onClick={() =>
+                                  handleRequestAction(community._id, pendingUser._id, "approve")
+                                }
+                              >
+                                <CheckCircleIcon className="h-4 w-4" />
+                                Approve
+                              </button>
+                              <button
+                                type="button"
+                                className="inline-flex items-center gap-2 rounded-lg bg-rose-100 px-3 py-1 font-semibold text-rose-700"
+                                onClick={() =>
+                                  handleRequestAction(community._id, pendingUser._id, "reject")
+                                }
+                              >
+                                <XCircleIcon className="h-4 w-4" />
+                                Reject
+                              </button>
+                            </div>
                           </div>
                         </div>
                       ))}

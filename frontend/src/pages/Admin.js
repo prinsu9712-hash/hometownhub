@@ -3,6 +3,20 @@ import { motion } from "framer-motion";
 import API, { getApiErrorMessage } from "../api";
 import Layout from "../components/Layout";
 import { AuthContext } from "../context/AuthContext";
+import {
+  CalendarIcon,
+  ChartIcon,
+  CheckCircleIcon,
+  ClipboardIcon,
+  CommunityIcon,
+  CrownIcon,
+  FlagIcon,
+  ShieldIcon,
+  SparkIcon,
+  UserIcon,
+  UsersIcon,
+  XCircleIcon
+} from "../components/Icons";
 
 function Admin() {
   const { user } = useContext(AuthContext);
@@ -136,7 +150,7 @@ function Admin() {
   if (user?.role !== "ADMIN") {
     return (
       <Layout>
-        <section className="hero-glass p-8 sm:p-10">
+        <section className="aurora-shell p-8 sm:p-10">
           <p className="section-kicker">Restricted</p>
           <h2 className="section-title">Admin Access Required</h2>
           <p className="mt-4 text-stone-600">This module is only available for platform administrators.</p>
@@ -145,23 +159,83 @@ function Admin() {
     );
   }
 
-  const tabButton = (id, label) => (
+  const tabs = [
+    { id: "kpi", label: "KPI", icon: ChartIcon },
+    { id: "users", label: "Users", icon: UsersIcon },
+    { id: "events", label: "Events", icon: CalendarIcon },
+    { id: "reports", label: "Reports", icon: FlagIcon },
+    { id: "categories", label: "Categories", icon: SparkIcon },
+    { id: "onboarding", label: "Onboarding", icon: ClipboardIcon },
+    { id: "communityRequests", label: "Requests", icon: CommunityIcon }
+  ];
+
+  const topStats = stats
+    ? [
+        { label: "Users", value: stats.totalUsers, icon: UsersIcon },
+        { label: "Communities", value: stats.totalCommunities, icon: CommunityIcon },
+        { label: "Events", value: stats.totalEvents, icon: CalendarIcon },
+        { label: "Open reports", value: stats.openReports, icon: FlagIcon }
+      ]
+    : [];
+
+  const tabButton = (id, label, Icon) => (
     <button
       type="button"
       onClick={() => setTab(id)}
-      className={`rounded-xl px-4 py-2 text-sm font-semibold ${tab === id ? "bg-gradient-to-r from-brand to-brand2 text-white" : "bg-white/80 text-stone-700"}`}
+      className={`tab-pill ${tab === id ? "tab-pill-active" : ""}`}
     >
+      <Icon className="h-4 w-4" />
       {label}
     </button>
   );
 
   return (
     <Layout>
-      <section className="hero-glass p-8 sm:p-10">
-        <div className="mb-6 rounded-2xl bg-gradient-to-r from-[#8d5a34] via-[#b78656] to-[#e39d58] p-6 text-white">
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white/85">Platform Admin</p>
-          <h2 className="mt-2 text-3xl font-bold sm:text-4xl">Control Center</h2>
-          <p className="mt-2 text-sm text-white/90">Monitor KPIs, users, events, abuse reports, and content categories.</p>
+      <section className="aurora-shell p-8 sm:p-10">
+        <div className="hero-banner mb-6">
+          <div className="hero-content grid gap-8 lg:grid-cols-[minmax(0,1.4fr)_minmax(300px,0.95fr)] lg:items-center">
+            <div>
+              <div className="mb-4 flex flex-wrap gap-2">
+                <span className="hero-chip">
+                  <CrownIcon className="h-4 w-4" />
+                  Platform Admin
+                </span>
+                <span className="hero-chip">
+                  <ShieldIcon className="h-4 w-4" />
+                  Control layer
+                </span>
+              </div>
+              <h2 className="text-3xl font-bold sm:text-5xl">A more cinematic admin control center for the whole platform</h2>
+              <p className="mt-3 max-w-3xl text-sm text-white/90 sm:text-base">
+                Monitor KPIs, assign roles, review events, manage abuse reports, and approve onboarding or community requests from one polished workspace.
+              </p>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              {topStats.map((item, idx) => {
+                const Icon = item.icon;
+                return (
+                  <motion.div
+                    key={item.label}
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4, delay: idx * 0.05 }}
+                    className="hero-stat"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="icon-badge h-10 w-10 rounded-xl">
+                        <Icon className="h-5 w-5" />
+                      </span>
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/72">{item.label}</p>
+                        <p className="mt-1 text-xl font-bold text-white">{item.value}</p>
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </div>
         </div>
 
         {loadError && (
@@ -177,13 +251,7 @@ function Admin() {
         )}
 
         <div className="mb-6 flex flex-wrap gap-2">
-          {tabButton("kpi", "KPI")}
-          {tabButton("users", "Users")}
-          {tabButton("events", "Events")}
-          {tabButton("reports", "Reports")}
-          {tabButton("categories", "Categories")}
-          {tabButton("onboarding", "Onboarding")}
-          {tabButton("communityRequests", "Community Requests")}
+          {tabs.map((item) => tabButton(item.id, item.label, item.icon))}
         </div>
 
         {isLoading && (
@@ -204,7 +272,7 @@ function Admin() {
               ["Participants", stats.totalParticipants],
               ["Open Reports", stats.openReports]
             ].map(([label, value]) => (
-              <motion.div key={label} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="glass-tile p-4">
+              <motion.div key={label} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="feature-card p-4">
                 <p className="section-kicker">{label}</p>
                 <p className="mt-2 text-2xl font-bold text-stone-900">{value}</p>
               </motion.div>
@@ -215,9 +283,12 @@ function Admin() {
         {tab === "users" && (
           <div className="space-y-3">
             {users.map((member) => (
-              <div key={member._id} className="glass-tile flex flex-wrap items-center justify-between gap-3 p-4">
+              <div key={member._id} className="feed-card flex flex-wrap items-center justify-between gap-3 p-4">
                 <div>
-                  <p className="font-semibold text-stone-900">{member.name}</p>
+                  <p className="flex items-center gap-2 font-semibold text-stone-900">
+                    <UserIcon className="h-4 w-4 text-brand" />
+                    {member.name}
+                  </p>
                   <p className="text-sm text-stone-600">{member.email} | {member.hometown || "No hometown"}</p>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -238,10 +309,13 @@ function Admin() {
         {tab === "events" && (
           <div className="space-y-3">
             {events.map((event) => (
-              <div key={event._id} className={`rounded-2xl border p-4 ${event.isDeleted ? "border-red-200 bg-red-50/85" : "border-stone-200 bg-white/70"}`}>
+              <div key={event._id} className={`feed-card ${event.isDeleted ? "border-red-200 bg-red-50/85" : ""}`}>
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
-                    <p className="font-semibold text-stone-900">{event.title}</p>
+                    <p className="flex items-center gap-2 font-semibold text-stone-900">
+                      <CalendarIcon className="h-4 w-4 text-brand" />
+                      {event.title}
+                    </p>
                     <p className="text-sm text-stone-600">{event.community?.name || "Unknown"} | {event.createdBy?.name || "Unknown"}</p>
                   </div>
                   {!event.isDeleted ? (
@@ -258,8 +332,11 @@ function Admin() {
         {tab === "reports" && (
           <div className="space-y-3">
             {reports.map((report) => (
-              <div key={report._id} className="glass-tile p-4">
-                <p className="font-semibold text-stone-900">{report.targetType} | {report.reason}</p>
+              <div key={report._id} className="feed-card">
+                <p className="flex items-center gap-2 font-semibold text-stone-900">
+                  <FlagIcon className="h-4 w-4 text-brand" />
+                  {report.targetType} | {report.reason}
+                </p>
                 <p className="mt-1 text-sm text-stone-600">By: {report.reporter?.name || "Unknown"} | Status: {report.status}</p>
                 {report.details && <p className="mt-2 text-sm text-stone-700">{report.details}</p>}
                 {report.status === "OPEN" && (
@@ -283,7 +360,7 @@ function Admin() {
             </form>
             <div className="space-y-2">
               {categories.map((category) => (
-                <div key={category._id} className="glass-tile flex items-center justify-between p-4">
+                <div key={category._id} className="feed-card flex items-center justify-between p-4">
                   <div>
                     <p className="font-semibold text-stone-900">{category.name}</p>
                     <p className="text-sm text-stone-600">{category.description || "No description"}</p>
@@ -299,13 +376,16 @@ function Admin() {
         {tab === "onboarding" && (
           <div className="space-y-3">
             {onboarding.map((item) => (
-              <article key={item._id} className="glass-tile p-4">
-                <p className="font-semibold text-stone-900">{item.communityName} ({item.cityVillage})</p>
+              <article key={item._id} className="feed-card">
+                <p className="flex items-center gap-2 font-semibold text-stone-900">
+                  <ClipboardIcon className="h-4 w-4 text-brand" />
+                  {item.communityName} ({item.cityVillage})
+                </p>
                 <p className="mt-1 text-sm text-stone-600">Contact: {item.contactName} | {item.contactEmail}</p>
                 <p className="mt-1 text-sm text-stone-600">Status: {item.status}</p>
                 <div className="mt-3 flex gap-2">
-                  <button type="button" onClick={() => updateOnboardingStatus(item._id, "APPROVED")} className="rounded-lg bg-emerald-100 px-3 py-1.5 text-sm font-semibold text-emerald-700">Approve</button>
-                  <button type="button" onClick={() => updateOnboardingStatus(item._id, "REJECTED")} className="rounded-lg bg-rose-100 px-3 py-1.5 text-sm font-semibold text-rose-700">Reject</button>
+                  <button type="button" onClick={() => updateOnboardingStatus(item._id, "APPROVED")} className="inline-flex items-center gap-2 rounded-lg bg-emerald-100 px-3 py-1.5 text-sm font-semibold text-emerald-700"><CheckCircleIcon className="h-4 w-4" />Approve</button>
+                  <button type="button" onClick={() => updateOnboardingStatus(item._id, "REJECTED")} className="inline-flex items-center gap-2 rounded-lg bg-rose-100 px-3 py-1.5 text-sm font-semibold text-rose-700"><XCircleIcon className="h-4 w-4" />Reject</button>
                 </div>
               </article>
             ))}
@@ -316,8 +396,11 @@ function Admin() {
         {tab === "communityRequests" && (
           <div className="space-y-3">
             {communityRequests.map((request) => (
-              <article key={request._id} className="glass-tile p-4">
-                <p className="font-semibold text-stone-900">{request.name}</p>
+              <article key={request._id} className="feed-card">
+                <p className="flex items-center gap-2 font-semibold text-stone-900">
+                  <CommunityIcon className="h-4 w-4 text-brand" />
+                  {request.name}
+                </p>
                 <p className="mt-1 text-sm text-stone-600">
                   {request.city} | Requested by {request.createdBy?.name || "Unknown"}
                 </p>
@@ -327,15 +410,17 @@ function Admin() {
                   <button
                     type="button"
                     onClick={() => updateCommunityRequestStatus(request._id, "APPROVED")}
-                    className="rounded-lg bg-emerald-100 px-3 py-1.5 text-sm font-semibold text-emerald-700"
+                    className="inline-flex items-center gap-2 rounded-lg bg-emerald-100 px-3 py-1.5 text-sm font-semibold text-emerald-700"
                   >
+                    <CheckCircleIcon className="h-4 w-4" />
                     Approve
                   </button>
                   <button
                     type="button"
                     onClick={() => updateCommunityRequestStatus(request._id, "REJECTED")}
-                    className="rounded-lg bg-rose-100 px-3 py-1.5 text-sm font-semibold text-rose-700"
+                    className="inline-flex items-center gap-2 rounded-lg bg-rose-100 px-3 py-1.5 text-sm font-semibold text-rose-700"
                   >
+                    <XCircleIcon className="h-4 w-4" />
                     Reject
                   </button>
                 </div>
