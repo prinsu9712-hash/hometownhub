@@ -1,8 +1,10 @@
-import { useState, useContext } from "react";
+import { useState, useContext, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { AuthContext } from "../context/AuthContext";
 import Layout from "../components/Layout";
+
+const AUTH_MESSAGE_STORAGE_KEY = "auth:message";
 
 function Login() {
   const { login } = useContext(AuthContext);
@@ -13,6 +15,18 @@ function Login() {
     email: "",
     password: "",
   });
+
+  useEffect(() => {
+    try {
+      const authMessage = window.sessionStorage.getItem(AUTH_MESSAGE_STORAGE_KEY);
+      if (authMessage) {
+        setErrorMessage(authMessage);
+        window.sessionStorage.removeItem(AUTH_MESSAGE_STORAGE_KEY);
+      }
+    } catch (error) {
+      // Ignore storage access issues; the login form still works normally.
+    }
+  }, []);
 
   const handleChange = (e) => {
     setForm((prev) => ({
