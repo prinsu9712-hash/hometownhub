@@ -14,9 +14,7 @@ exports.protect = async (req, res, next) => {
     }
 
     const token = authHeader.split(" ")[1];
-
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
     const user = await User.findById(decoded.id);
 
     if (!user) {
@@ -24,10 +22,13 @@ exports.protect = async (req, res, next) => {
     }
 
     req.user = user;
-
     next();
   } catch (error) {
-    return res.status(401).json({ message: "Invalid token" });
+    const isExpiredToken = error?.name === "TokenExpiredError";
+
+    return res.status(401).json({
+      message: isExpiredToken ? "Session expired. Please log in again." : "Invalid token"
+    });
   }
 };
 
@@ -37,9 +38,6 @@ exports.protect = async (req, res, next) => {
 
 exports.authorize = (...roles) => {
   return (req, res, next) => {
-
-    console.log("User role:", req.user.role); // ✅ DEBUG HERE
-
     if (!roles.includes(req.user.role)) {
       return res.status(403).json({ message: "Access denied" });
     }

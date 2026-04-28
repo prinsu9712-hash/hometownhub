@@ -3,7 +3,6 @@ import axios from "axios";
 const stripTrailingSlash = (value) => String(value || "").replace(/\/+$/, "");
 const AUTH_EVENT_NAME = "auth:expired";
 const AUTH_MESSAGE_STORAGE_KEY = "auth:message";
-const AUTH_ERROR_MESSAGES = new Set(["Invalid token", "User not found", "Not authorized"]);
 
 const normalizeApiBaseUrl = (value) => {
   const normalized = stripTrailingSlash(value);
@@ -48,10 +47,9 @@ API.interceptors.request.use((req) => {
 API.interceptors.response.use(
   (response) => response,
   (error) => {
-    const message = error?.response?.data?.message || error?.response?.data?.error || "";
     const status = error?.response?.status;
 
-    if (status === 401 && AUTH_ERROR_MESSAGES.has(message)) {
+    if (status === 401) {
       clearStoredAuth();
 
       if (typeof window !== "undefined") {
@@ -97,7 +95,7 @@ export const getApiErrorMessage = (error, fallback = "Request failed.") => {
     return `Cannot reach the backend at ${API_BASE_URL}. Make sure your backend is deployed and CORS allows this Vercel domain.`;
   }
 
-  if (error?.response?.status === 401 && AUTH_ERROR_MESSAGES.has(error?.response?.data?.message)) {
+  if (error?.response?.status === 401) {
     return "Session expired. Please log in again.";
   }
 
