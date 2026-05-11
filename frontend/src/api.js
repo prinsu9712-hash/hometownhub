@@ -89,6 +89,10 @@ export const getApiErrorMessage = (error, fallback = "Request failed.") => {
     return "Session expired. Please log in again.";
   }
 
+  if (error?.response?.status === 429) {
+    return error?.response?.data?.message || "Too many requests. Please wait a minute and try again.";
+  }
+
   return error?.response?.data?.message || error?.response?.data?.error || fallback;
 };
 

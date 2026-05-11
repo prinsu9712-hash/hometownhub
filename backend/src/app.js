@@ -6,6 +6,7 @@ const rateLimit = require("express-rate-limit");
 const path = require("path");
 
 const app = express();
+app.set("trust proxy", 1);
 
 /* ================================
    GLOBAL MIDDLEWARE
@@ -73,7 +74,15 @@ app.use(morgan("dev"));
 // Rate Limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100
+  max: 1000,
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req) => req.method === "OPTIONS",
+  handler: (req, res) => {
+    res.status(429).json({
+      message: "Too many requests. Please wait a minute and try again."
+    });
+  }
 });
 app.use(limiter);
 
