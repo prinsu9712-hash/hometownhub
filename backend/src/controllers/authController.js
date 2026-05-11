@@ -2,6 +2,16 @@ const User = require("../models/User");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 
+const buildUserPayload = (user) => ({
+  _id: user._id,
+  name: user.name,
+  email: user.email,
+  role: user.role,
+  hometown: user.hometown,
+  profilePhoto: user.profilePhoto || "",
+  friends: user.friends || []
+});
+
 exports.register = async (req, res) => {
   try {
     const { name, email, password, hometown } = req.body;
@@ -37,13 +47,7 @@ exports.register = async (req, res) => {
 
     res.status(201).json({
       message: "User Registered",
-      user: {
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        hometown: user.hometown
-      }
+      user: buildUserPayload(user)
     });
 
   } catch (error) {
@@ -89,13 +93,7 @@ exports.login = async (req, res) => {
 
     res.json({
       token,
-      user: {
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        hometown: user.hometown
-      }
+      user: buildUserPayload(user)
     });
   } catch (error) {
     res.status(500).json({ message: "Login failed" });
@@ -104,7 +102,9 @@ exports.login = async (req, res) => {
 
 exports.getMe = async (req, res) => {
   try {
-    const user = await User.findById(req.user._id).select("name email role hometown createdAt");
+    const user = await User.findById(req.user._id)
+      .select("name email role hometown profilePhoto friends createdAt")
+      .populate("friends", "name email hometown role profilePhoto");
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
@@ -135,15 +135,32 @@ exports.updateMe = async (req, res) => {
 
     res.json({
       message: "Profile updated",
-      user: {
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        hometown: user.hometown
-      }
+      user: buildUserPayload(user)
     });
   } catch (error) {
     res.status(500).json({ message: "Failed to update profile" });
+  }
+};
+
+exports.updateProfilePhoto = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: "Profile photo is required" });
+    }
+
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    user.profilePhoto = req.file.filename;
+    await user.save();
+
+    res.json({
+      message: "Profile photo updated",
+      user: buildUserPayload(user)
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Failed to update profile photo" });
   }
 };

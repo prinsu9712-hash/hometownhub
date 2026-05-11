@@ -95,7 +95,9 @@ function Communities() {
     name: "",
     state: "",
     city: "",
-    description: ""
+    description: "",
+    rules: "",
+    guidelines: ""
   });
   const navigate = useNavigate();
   const formRef = useRef(null);
@@ -255,10 +257,12 @@ function Communities() {
         name: form.name.trim(),
         state: form.state.trim(),
         city: form.city.trim(),
-        description: form.description.trim()
+        description: form.description.trim(),
+        rules: form.rules.trim(),
+        guidelines: form.guidelines.trim()
       });
 
-      setForm({ name: "", state: "", city: "", description: "" });
+      setForm({ name: "", state: "", city: "", description: "", rules: "", guidelines: "" });
       setStatusMessage(
         user?.role === "ADMIN"
           ? "Community created successfully."
@@ -599,6 +603,32 @@ function Communities() {
                   placeholder="Community description"
                 />
               </div>
+              <div className="input-shell">
+                <label className="input-label">
+                  <ShieldIcon className="h-4 w-4" />
+                  Rules
+                </label>
+                <textarea
+                  name="rules"
+                  value={form.rules}
+                  onChange={handleCreateChange}
+                  className="soft-input min-h-[96px]"
+                  placeholder="Posting, privacy, and safety rules"
+                />
+              </div>
+              <div className="input-shell">
+                <label className="input-label">
+                  <ClipboardIcon className="h-4 w-4" />
+                  Guidelines
+                </label>
+                <textarea
+                  name="guidelines"
+                  value={form.guidelines}
+                  onChange={handleCreateChange}
+                  className="soft-input min-h-[96px]"
+                  placeholder="Helpful conduct and event guidelines"
+                />
+              </div>
             </div>
 
             {createError && (
@@ -653,6 +683,24 @@ function Communities() {
                 </span>
               </div>
               <p className="mt-3 text-sm text-stone-600">{community.description || "No description yet."}</p>
+              <div className="mt-4 grid gap-3 md:grid-cols-2">
+                <div className="rounded-2xl border border-stone-200 bg-stone-50/85 p-4">
+                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-stone-500">
+                    Rules
+                  </p>
+                  <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-stone-700">
+                    {community.rules || "No rules posted yet."}
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-stone-200 bg-stone-50/85 p-4">
+                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-stone-500">
+                    Guidelines
+                  </p>
+                  <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-stone-700">
+                    {community.guidelines || "No guidelines posted yet."}
+                  </p>
+                </div>
+              </div>
               <div className="mt-4 flex flex-wrap gap-2">
                 <span className="tool-chip">
                   <UsersIcon className="h-4 w-4 text-brand" />

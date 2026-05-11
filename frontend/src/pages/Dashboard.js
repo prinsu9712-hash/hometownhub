@@ -12,6 +12,7 @@ import {
   ClipboardIcon,
   CommunityIcon,
   GlobeIcon,
+  MailIcon,
   RadioIcon,
   ShieldIcon,
   SparkIcon,
@@ -39,6 +40,15 @@ function Dashboard() {
       icon: BellIcon,
       surface: "from-sky-100 via-cyan-50 to-white text-sky-700",
       tools: ["Alerts", "Realtime updates"]
+    },
+    {
+      title: "Messages",
+      desc: "Send friend requests and chat with accepted hometown members.",
+      to: "/messages",
+      badge: "Chat",
+      icon: MailIcon,
+      surface: "from-emerald-100 via-lime-50 to-white text-emerald-700",
+      tools: ["Friend requests", "Live chat"]
     },
     {
       title: "Profile",

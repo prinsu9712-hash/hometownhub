@@ -362,6 +362,21 @@ function Events() {
           <div className="glass-tile p-4"><p className="section-kicker">Upcoming</p><p className="mt-2 text-2xl font-bold text-emerald-700">{stats.upcoming}</p></div>
         </div>
 
+        <div className="mb-6 grid gap-4 lg:grid-cols-2">
+          <div className="glass-tile p-5">
+            <p className="section-kicker">Community Rules</p>
+            <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-stone-700">
+              {community?.rules || "No community rules posted yet."}
+            </p>
+          </div>
+          <div className="glass-tile p-5">
+            <p className="section-kicker">Guidelines</p>
+            <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-stone-700">
+              {community?.guidelines || "No community guidelines posted yet."}
+            </p>
+          </div>
+        </div>
+
         {isLoading && (
           <div className="mb-6 rounded-xl border border-stone-200 bg-white/80 px-4 py-3 text-sm text-stone-700">
             Loading community hub...
@@ -507,12 +522,14 @@ function Events() {
                     </div>
                     <p className="mt-3 whitespace-pre-wrap text-stone-800">{post.content}</p>
                     {post.image && (
-                      <img
-                        src={getUploadUrl(post.image)}
-                        alt="Post attachment"
-                        className="mt-3 max-h-80 w-full rounded-2xl object-cover"
-                        loading="lazy"
-                      />
+                      <div className="mt-3 overflow-hidden rounded-2xl bg-stone-50">
+                        <img
+                          src={getUploadUrl(post.image)}
+                          alt="Post attachment"
+                          className="mx-auto h-auto max-h-[720px] max-w-full rounded-2xl object-contain"
+                          loading="lazy"
+                        />
+                      </div>
                     )}
                     <div className="mt-3 flex flex-wrap items-center gap-2">
                       <button

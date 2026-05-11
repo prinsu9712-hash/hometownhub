@@ -27,7 +27,13 @@ for (const origin of (process.env.FRONTEND_URLS || "").split(",")) {
 
 const io = new Server(server, {
   cors: {
-    origin: Array.from(new Set(socketOrigins)),
+    origin: (origin, callback) => {
+      if (!origin || socketOrigins.includes(origin) || origin.includes(".vercel.app")) {
+        return callback(null, true);
+      }
+
+      return callback(new Error("Not allowed by Socket.IO CORS"));
+    },
     methods: ["GET", "POST"]
   }
 });

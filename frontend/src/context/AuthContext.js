@@ -85,8 +85,24 @@ export const AuthProvider = ({ children }) => {
     return data.user;
   };
 
+  const updateProfilePhoto = async (file) => {
+    const payload = new FormData();
+    payload.append("profilePhoto", file);
+
+    const { data } = await API.put("/auth/me/photo", payload, {
+      headers: {
+        "Content-Type": "multipart/form-data"
+      }
+    });
+    localStorage.setItem("user", JSON.stringify(data.user));
+    setUser(data.user);
+    return data.user;
+  };
+
   return (
-    <AuthContext.Provider value={{ user, login, logout, isAuthReady, refreshProfile, updateProfile }}>
+    <AuthContext.Provider
+      value={{ user, login, logout, isAuthReady, refreshProfile, updateProfile, updateProfilePhoto }}
+    >
       {children}
     </AuthContext.Provider>
   );

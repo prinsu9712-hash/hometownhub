@@ -27,6 +27,7 @@ function Navbar() {
     const links = [
       { to: "/dashboard", label: "Dashboard" },
       { to: "/communities", label: "Communities" },
+      { to: "/messages", label: "Messages" },
       { to: "/profile", label: "Profile" },
       { to: "/notifications", label: "Notifications" },
       { to: "/onboarding", label: "Onboarding" }

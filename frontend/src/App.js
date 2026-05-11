@@ -11,6 +11,7 @@ import Notifications from "./pages/Notifications";
 import Admin from "./pages/Admin";
 import Onboarding from "./pages/Onboarding";
 import Profile from "./pages/Profile";
+import Messages from "./pages/Messages";
 
 import PrivateRoute from "./components/PrivateRoute";
 import Navbar from "./components/Navbar";
@@ -57,6 +58,15 @@ function App() {
             element={
               <PrivateRoute>
                 <Notifications />
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path="/messages"
+            element={
+              <PrivateRoute>
+                <Messages />
               </PrivateRoute>
             }
           />

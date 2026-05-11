@@ -89,6 +89,8 @@ app.use("/api/reports", require("./routes/reportRoutes"));
 app.use("/api/categories", require("./routes/categoryRoutes"));
 app.use("/api/onboarding", require("./routes/onboardingRoutes"));
 app.use("/api/notifications", require("./routes/notificationRoutes"));
+app.use("/api/friends", require("./routes/friendRoutes"));
+app.use("/api/messages", require("./routes/messageRoutes"));
 app.use("/api/admin", require("./routes/adminRoutes"));
 
 /* ================================
