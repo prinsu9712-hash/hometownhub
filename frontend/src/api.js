@@ -81,16 +81,6 @@ API.interceptors.response.use(
 );
 
 export const getApiErrorMessage = (error, fallback = "Request failed.") => {
-  const isHostedWithoutApiConfig =
-    typeof window !== "undefined" &&
-    window.location.hostname !== "localhost" &&
-    !process.env.REACT_APP_API_BASE_URL &&
-    !process.env.REACT_APP_API_URL;
-
-  if (isHostedWithoutApiConfig) {
-    return "Frontend API URL is not configured. In Vercel add REACT_APP_API_URL or REACT_APP_API_BASE_URL with your backend URL, then redeploy.";
-  }
-
   if (error?.message === "Network Error") {
     return `Cannot reach the backend at ${API_BASE_URL}. Make sure your backend is deployed and CORS allows this Vercel domain.`;
   }
